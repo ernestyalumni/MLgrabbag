@@ -1,0 +1,137 @@
+% file: ML.tex
+% Machine Learning (notes), in unconventional ``grande'' format; fitting a widescreen format
+% 
+% github        : ernestyalumni
+% gmail         : ernestyalumni 
+% linkedin      : ernestyalumni 
+% wordpress.com : ernestyalumni
+%
+% This code is open-source, governed by the Creative Common license.  Use of this code is governed by the Caltech Honor Code: ``No member of the Caltech community shall take unfair advantage of any other member of the Caltech community.'' 
+
+\documentclass[10pt]{amsart}
+\pdfoutput=1
+\usepackage{mathtools,amssymb,lipsum,caption}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage[table]{xcolor}
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usetikzlibrary{matrix,arrows}
+
+\usepackage{multicol}
+
+\hypersetup{colorlinks=true,citecolor=[rgb]{0,0.4,0}}
+
+\oddsidemargin=15pt
+\evensidemargin=5pt
+\hoffset-45pt
+\voffset-55pt
+\topmargin=-4pt
+\headsep=5pt
+\textwidth=1120pt
+\textheight=595pt
+\paperwidth=1200pt
+\paperheight=700pt
+\footskip=40pt
+
+
+
+
+
+
+
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+%\newtheorem*{main}{Main Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
+\newenvironment{claimproof}[1]{\par\noindent\underline{Proof:}\space#1}{\hfill $\blacksquare$}
+
+%This defines a new command \questionhead which takes one argument and
+%prints out Question #. with some space.
+\newcommand{\questionhead}[1]
+  {\bigskip\bigskip
+   \noindent{\small\bf Question #1.}
+   \bigskip}
+
+\newcommand{\problemhead}[1]
+  {
+   \noindent{\small\bf Problem #1.}
+   }
+
+\newcommand{\exercisehead}[1]
+  { \smallskip
+   \noindent{\small\bf Exercise #1.}
+  }
+
+\newcommand{\solutionhead}[1]
+  {
+   \noindent{\small\bf Solution #1.}
+   }
+
+
+\title{Machine Learning}
+\author{Ernest Yeung \href{mailto:ernestyalumni@gmail.com}{ernestyalumni@gmail.com}}
+\date{24 avril 2016}
+\keywords{Machine Learning, statistical inference, statistical inference learning}
+\begin{document}
+
+\definecolor{darkgreen}{rgb}{0,0.4,0}
+\lstset{language=Python,
+ frame=bottomline,
+ basicstyle=\scriptsize,
+ identifierstyle=\color{blue},
+ keywordstyle=\bfseries,
+ commentstyle=\color{darkgreen},
+ stringstyle=\color{red},
+ }
+%\lstlistoflistings
+
+\maketitle
+
+\tableofcontents
+
+
+\begin{multicols*}{2}
+
+\begin{abstract}
+Everything about Machine Learning.  
+\end{abstract}
+
+\part{Introduction}
+
+\subsubsection{Terminology} \quad \\ 
+inputs $\equiv $ independent variables $\equiv $ predictors (cf. statistics) $ \equiv $ features (cf. pattern recognition) \\
+outputs $\equiv $ dependent variables $\equiv $ responses
+
+cf. Chapter 2 Overview of Supervised Learning, Section 2.1 Introduction of Hastie, Tibshirani, and Friedman (2009) \cite{HTF2009}
+
+cf. Chapter 2 Overview of Supervised Learning, Section 2.2 Variable Types and Terminology  of Hastie, Tibshirani, and Friedman (2009) \cite{HTF2009}
+
+\subsubsection{$\text{FinSet}$} \quad \\ 
+The category $\text{FinSet} \in \mathbf{\text{Cat}}$ is the category of all finite sets (i.e. $\text{Obj}(\text{FinSet}) \equiv $ all finite sets) and all functions in between them; note that $\text{FinSet} \subset \mathbf{\text{Set}}$ \footnote{nlab $\text{FinSet}$ \url{https://ncatlab.org/nlab/show/FinSet}}
+
+Recall that the $\text{FinSet}$ \emph{skeletal} is
+
+
+
+
+\end{multicols*}
+\begin{thebibliography}{9}
+\bibitem{HTF2009}
+Trevor Hastie, Robert Tibshirani, Jerome Friedman.   \textbf{The Elements of Statistical Learning: Data Mining, Inference, and Prediction}, Second Edition (Springer Series in Statistics) 2nd ed. 2009. Corr. 7th printing 2013 Edition.  ISBN-13: 978-0387848570.  \url{https://web.stanford.edu/~hastie/local.ftp/Springer/OLD/ESLII_print4.pdf}
+
+
+
+\end{thebibliography}
+
+\end{document}
