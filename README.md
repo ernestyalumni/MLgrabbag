@@ -16,7 +16,7 @@ I’ll point out how I did it, and refer to the links that helped me (sometimes 
 
 My install procedure assumes you are using the latest proprietary NVIDIA Accelerated Graphics Drivers for Linux.  I removed and/or blacklisted any other open-source versions of nvidia drivers, and in particular blacklisted nouveau.  See my [blog post](https://ernestyalumni.wordpress.com/#OhNoFedoraetNvidia) for details and description.  
 
-1. Download the latest [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) (appears to be 7.5 as of 20160512).  For my setup, I clicked on the boxes Linux for Operation System, x86_64 for Architecture, Fedora for Distribution, 21 for Version (only one there), runfile (local) for Installer Type (it was the first option that appeared).  Then I modified the instructions on their webpage: 
+* Download the latest [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) (appears to be 7.5 as of 20160512).  For my setup, I clicked on the boxes Linux for Operation System, x86_64 for Architecture, Fedora for Distribution, 21 for Version (only one there), runfile (local) for Installer Type (it was the first option that appeared).  Then I modified the instructions on their webpage: 
 
 	1. Run `sudo sh cuda_7.5.18_linux.run`
 	2. Follow the command-line prompts.
@@ -55,7 +55,7 @@ Finished copying samples.
 
 Again, Fedora 23 was not a supported configuration, but I wished to continue.  I had already installed NVIDIA Accelerated Graphics Driver for Linux (that’s how I was seeing my X graphical environment) but it was a later version **361.* ** and I did not want to uninstall it and then reinstall, which was recommended by other webpages (I had already gone through the [mini-nightmare of reinstalling these drivers before](https://ernestyalumni.wordpress.com/#OhNoFedoraetNvidia), which can trash your X11 environment that you depend on for a functioning GUI).  
 
-2. Continuing, this was also printed out by CUDA’s installer: 
+* Continuing, this was also printed out by CUDA’s installer: 
 
 
 Installing the CUDA Samples in /home/propdev/Public ...
@@ -118,7 +118,7 @@ echo $PATH
 echo $LD_LIBRARY_PATH
 ```
 
-3. Patch the `host_config.h` header file
+* Patch the `host_config.h` header file
 
 cf. [Install NVIDIA CUDA on Fedora 22 with gcc 5.1](https://www.pugetsystems.com/labs/articles/Install-NVIDIA-CUDA-on-Fedora-22-with-gcc-5-1-654/) and [CUDA incompatible with my gcc version](http://stackoverflow.com/questions/6622454/cuda-incompatible-with-my-gcc-version)
 
@@ -143,7 +143,7 @@ Commented-out version (these 3 lines)
 
 Afterwards, I did not have any problems with c compiler gcc incompatibility (yet).  
 
-4. At this point CUDA runs without problems if no graphics capabilities are needed.  For instance, as a sanity check, I ran, from the installed samples with CUDA, I made `deviceQuery` and ran it:
+* At this point CUDA runs without problems if no graphics capabilities are needed.  For instance, as a sanity check, I ran, from the installed samples with CUDA, I made `deviceQuery` and ran it:
 ```
 $ cd ~/NVIDIA_CUDA-7.5_Samples/1_Utilities/deviceQuery
 $ make -j12
@@ -196,7 +196,7 @@ deviceQuery, CUDA Driver = CUDART, CUDA Driver Version = 8.0, CUDA Runtime Versi
 Result = PASS
 ```
 
-5. Getting the other samples to run, getting CUDA to have graphics capabilities, soft symbolic linking to the existing libraries.
+* Getting the other samples to run, getting CUDA to have graphics capabilities, soft symbolic linking to the existing libraries.
 
 The flow or general procedure I ended up having to do was to use `locate` to find the relevant `*.so.*` or `*.h` file for the missing library or missing header, respectively, and then making soft symbolic links to them with the `ln -s` command.  I found that some of the samples have different configurations for in which directory the graphical libraries are (GL, GLU, X11, glut, etc.) than other samples in the samples included by NVIDIA.  
 
