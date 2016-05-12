@@ -3,6 +3,51 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
 
 # Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
 
+
+Installation of NVIDIA’s [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) on a Fedora 23 Workstation was nontrivial; part of the reason is that it appears that *7.5* is the latest version of the CUDA Toolkit (as of 20150512), and 7.5 only supports (for sure) Fedora 21.  And, this 7.5 version supports (out of the box) C compiler gcc up to version `4.*` and not gcc 5.  But there’s no reason why the later versions, Fedora 23 as opposed to Fedora 21, gcc 5 vs. gcc `4.*`, cannot be used (because I got CUDA to work on my setup, including samples).  But I found that I had to make some nontrivial symbolic linking (`ln`).  
+
+I wanted to install CUDA for Udacity’s [Intro to Parallel Programming](https://www.udacity.com/course/intro-to-parallel-programming--cs344), and in particular, in the very first lesson or video, [Intro to the Class](https://classroom.udacity.com/courses/cs344/lessons/55120467/concepts/658304810923), for instructions on running CUDA locally, only the links to the official NVIDIA documentation were given, in particular for Linux,   
+http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/index.html  
+But one only needs to do a Google search and read some forum posts that installing CUDA, Windows, Mac, or Linux, is highly nontrivial.  
+
+I’ll point out how I did it, and refer to the links that helped me (sometimes you simply follow, to the letter, the instructions there) and other links in which you should follow the instructions, but modify to suit your (my) system, and what *NOT* to do (from my experience).  
+
+## Gist, short summary, steps to do (without full details), to just get CUDA to work (no graphics)
+
+My install procedure assumes you are using the latest proprietary NVIDIA Accelerated Graphics Drivers for Linux.  I removed and/or blacklisted any other open-source versions of nvidia drivers, and in particular blacklisted nouveau.  See my [blog post](https://ernestyalumni.wordpress.com/#OhNoFedoraetNvidia) for details and description.  
+
+1. Download the latest [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) (appears to be 7.5 as of 20160512).  For my setup, I clicked on the boxes Linux for Operation System, x86_64 for Architecture, Fedora for Distribution, 21 for Version (only one there), runfile (local) for Installer Type (it was the first option that appeared).  Then I modified the instructions on their webpage: 
+
+	1. Run `sudo sh cuda_7.5.18_linux.run`
+	2. Follow the command-line prompts.
+
+Instead, I did
+
+```
+$ sudo sh cuda_7.5.18_linux.run --override
+```
+with the `- -override` flag to use gcc 5 so I **did not** have to downgrade to gcc `4.*`.  
+
+Here is how I selected my options at the command-line prompts (and part of the result):
+
+```
+$ sudo sh cuda_7.5.18_linux.run --override
+
+-------------------------------------------------------------
+Do you accept the previously read EULA? (accept/decline/quit): accept
+You are attempting to install on an unsupported configuration. Do you wish to continue? ((y)es/(n)o) [ default is no ]: yes
+Install NVIDIA Accelerated Graphics Driver for Linux-x86_64 352.39? ((y)es/(n)o/(q)uit): n 
+Install the CUDA 7.5 Toolkit? ((y)es/(n)o/(q)uit): y
+Enter Toolkit Location [ default is /usr/local/cuda-7.5 ]: 
+Do you want to install a symbolic link at /usr/local/cuda? ((y)es/(n)o/(q)uit): y
+Install the CUDA 7.5 Samples? ((y)es/(n)o/(q)uit): y
+Enter CUDA Samples Location [ default is /home/[yournamehere] ]: /home/[yournamehere]/Public
+Installing the CUDA Toolkit in /usr/local/cuda-7.5 ...
+Missing recommended library: libGLU.so
+Missing recommended library: libX11.so
+Missing recommended library: libXi.so
+Missing recommended library: libXmu.so
+
 Installing the CUDA Samples in /home/[yournamehere]/ ...
 Copying samples to /home/propdev/Public/NVIDIA_CUDA-7.5_Samples now...
 Finished copying samples.
@@ -154,8 +199,5 @@ Result = PASS
 5. Getting the other samples to run, getting CUDA to have graphics capabilities, soft symbolic linking to the existing libraries.
 
 The flow or general procedure I ended up having to do was to use `locate` to find the relevant `*.so.*` or `*.h` file for the missing library or missing header, respectively, and then making soft symbolic links to them with the `ln -s` command.  I found that some of the samples have different configurations for in which directory the graphical libraries are (GL, GLU, X11, glut, etc.) than other samples in the samples included by NVIDIA.  
-
-
-To be continued ... 
 
 
