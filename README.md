@@ -201,3 +201,13 @@ Result = PASS
 The flow or general procedure I ended up having to do was to use `locate` to find the relevant `*.so.*` or `*.h` file for the missing library or missing header, respectively, and then making soft symbolic links to them with the `ln -s` command.  I found that some of the samples have different configurations for in which directory the graphical libraries are (GL, GLU, X11, glut, etc.) than other samples in the samples included by NVIDIA.  
 
 
+** Why do I see "nvcc: No such file or directory" when I try to build a CUDA application
+
+[NVIDIA CUDA Getting Started Guide for Linux - CUDA_Getting_Started_Linux.pdf](http://developer.download.nvidia.com/embedded/L4T/r23_Release_v2.0/CUDA/CUDA_Getting_Started_Linux.pdf?autho=1463194964_12deb625011712b74e3df117272a90ea&file=CUDA_Getting_Started_Linux.pdf)
+
+"Your `LD_LIBRARY_PATH` environment variable is not set up correctly. Ensure that your `LD_LIBRARY_PATH` includes the lib and/or lib64 directory where you installed the Toolkit, usually `/usr/local/cuda-7.0/lib{,64}`:" (replace 7.0 with whatever version you're on; mine is 7.5)
+`
+$ export LD_LIBRARY_PATH=/usr/local/cuda-7.0/lib:$LD_LIBRARY_P
+`
+
+
