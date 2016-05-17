@@ -953,14 +953,14 @@ Suppose $v\in \text{ObjData}$, category of data \textbf{Data}, \\
 
 \[
 \begin{aligned}
-  & \text{Dat}  \xrightarrow{ \& } \text{Memory}  \\
+  & \text{Data}  \xrightarrow{ \& } \text{Memory}  \\
   & v \overset{\&}{\mapsto} \& v 
 \end{aligned}
 \]
 with address $\& v \in $ Memory.
 
 With \\
-\phantom{With } assigment $pv = \& v$,
+\phantom{With } assignment $pv = \& v$,
 \[
 \begin{aligned}
   & pv \in \text{Obj}\text{pointer}, \, \text{ category of pointers, pointer} \\ 
@@ -1001,6 +1001,85 @@ With \\
   \end{tikzpicture}
 \]
 
+Examples.  Consider \verb|passfunction.c| in Fitzpatrick \cite{Fitz}.
+
+Consider the type \verb|double|, \verb|double| $\in \text{Obj}\text{Types}$.  \\
+\phantom{ Consider } $\text{fun1, fun2} \in \text{Mor}\text{Types} \qquad \, \text{ namely }$ \\
+\phantom{ Consider } $\text{fun1, fun2} \in \text{Hom}(\text{double},\text{double}) \equiv \text{Hom}_{\text{Types}}(\text{double},\text{double})$
+
+Recall that
+\[
+\begin{aligned}
+  & \text{ pointer } \xrightarrow{ * } \text{ Dat } \\ 
+  & \text{ pointer } \xrightarrow{ \& } \text{ Memory }
+\end{aligned}
+\]
+$*, \&$ are functors with domain on the category pointer.
+
+Pointers to functions is the ``extension'' of functor $*$ to the codomain of $\text{Mor}\text{Types}$:
+
+\[
+\begin{aligned}
+  & \text{ pointer} & \xrightarrow{ * } \text{Mor}\text{Types} \\ 
+  & \text{ fun1 } & \overset{*}{ \mapsto } *\text{fun}1 \in \text{Hom}_{\text{Types}}(\text{double},\text{double})
+  \end{aligned}
+\]
+
+\[
+ \begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=4em, column sep=5em, minimum width=2em]
+  {
+    \text{double} & \text{Memory} \\
+    \text{double} & \text{pointer} \\
+    \text{double} & \\ 
+  };
+  \path[->]
+  (m-1-1) edge node [auto] {$\&$} (m-1-2)
+  (m-1-2) edge node [right] {$\cong$} (m-2-2)
+  (m-2-2) edge node [auto] {$*$} (m-2-1)
+  edge node [auto] {$*$} (m-3-1)
+  (m-2-1) edge node [left] {$\text{cube}$} (m-3-1)
+  ;
+ \end{tikzpicture} \qquad \qquad \,
+  \begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=4em, column sep=5em, minimum width=2em]
+  {
+    \text{res1} & \&\text{res1} \\
+    *\text{res1} & \text{res1} \\
+    *\text{res1} = y^3 & \\ 
+  };
+  \path[|->]
+  (m-1-1) edge node [auto] {$\&$} (m-1-2)
+  (m-1-2) edge node [right] {$\cong$} (m-2-2)
+  (m-2-2) edge node [auto] {$*$} (m-2-1)
+  edge node [auto] {$*$} (m-3-1)
+  (m-2-1) edge node [left] {$\text{cube}$} (m-3-1)
+  ;
+  \end{tikzpicture}
+\]
+
+It's unclear to me how \verb|void cube| can be represented in terms of category theory, as surely it cannot be represented as a mapping (it acts upon a functor, namely the $*$ functor for pointers).  It doesn't return a value, and so one cannot be confident to say there's explicitly a domain and codomain, or range for that matter.
+
+But what is going on is that
+\[
+\begin{gathered}
+  \text{ pointer }, \text{ double } , \text{ pointer } \xrightarrow{ \text{ cube } } \text{ pointer }, \text{ pointer } \\ 
+  \text{fun}1, x , \text{res}1 \overset{\text{cube}}{\mapsto} \text{fun}1, \text{res}1
+\end{gathered}
+\]
+s.t. $*\text{res}1 = y^3=(*\text{fun}1(x))^3$
+
+
+So I'll speculate that in this case, \verb|cube| is a functor, and in particular, is acting on $*$, the so-called deferencing operator:
+\[
+\begin{gathered}
+  \text{ pointer } \xrightarrow{ * } \text{float} \in \text{Data} \\
+  \text{ res}1 \overset{*}{\mapsto} *\text{res}1
+\end{gathered} \xrightarrow{ \text{ cube } } \begin{gathered}
+  \text{ pointer } \xrightarrow{ \text{cube}(*) } \text{float} \in \text{Data} \\
+  \text{ res}1 \overset{\text{cube}(*)}{\mapsto} \text{cube}(*\text{res}1)=y^3
+\end{gathered}
+\]
 
 
 \subsubsection{Need a CUDA, C, C$++$, IDE?  Try Eclipse!}
@@ -1027,6 +1106,9 @@ John Owens.  David Luebki.  \emph{Intro to Parallel Programming}.  \emph{CS344}.
 \bibitem{CS229}
 CS229 Stanford University.  \url{http://cs229.stanford.edu/materials.html}
 
+
+\bibitem{Fitz}
+Richard Fitzpatrick.  ``Computational Physics.''  \url{http://farside.ph.utexas.edu/teaching/329/329.pdf}
 
 
 
