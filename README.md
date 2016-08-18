@@ -1,6 +1,29 @@
 # MLgrabbag
 MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and implementations of Machine Learning; notes
 
+## Abridged Table of Contents (i.e. Doesn't contain everything)
+
+- Notes on `theano`
+- Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
+
+## Notes on `theano`
+
+| filename | directory | Description |
+| :-------- | :---------: | -----------: |
+| tutorial_theano.ipynb | `./` | jupyter notebook based on Theano's documentation tutorial |
+| supervised-theano.ipynb | `./` | Further explorations of *supervised learning* with `theano`, in a jupyter notebook |
+| `simple_logreg.py` | `./` | Simple logistic regression, from Theano's documentation's tutorial |
+
+- `simple_logreg.py` - from Theano's documentation and its tutorial, to run this on the GPU, I used the following:
+
+
+
+```
+THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python simple_logreg.py
+```
+
+
+
 # Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
 
 
