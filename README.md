@@ -5,8 +5,9 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
 
 - Notes on `theano`
 - Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
-  * Recovering from disastrous `dnf update` that adds a new kernel and trashes video output
-
+  * Recovering from disastrous `dnf update` that adds a new kernel and trashes video output, 2nd. time
+  * Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
+  
 ## Notes on `theano`
 
 | filename | directory | Description |
@@ -234,13 +235,84 @@ The flow or general procedure I ended up having to do was to use `locate` to fin
 $ export LD_LIBRARY_PATH=/usr/local/cuda-7.0/lib:$LD_LIBRARY_P
 `
 
-## Recovering from disastrous `dnf update` that adds a new kernel and trashes video output
+## Recovering from disastrous `dnf update` that adds a new kernel and trashes video output, 2nd. time
 
 <!-- [![`dnf update` after a long time, and having forgotten to **NOT** do this](https://scontent-lax3-1.cdninstagram.com/t50.2886-16/14936067_1878126812406187_9083488430947565568_n.mp4)] -->
 
+<!--
 <blockquote class="instagram-media" data-instgrm-captioned data-instgrm-version="7" style=" background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:658px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"><div style="padding:8px;"> <div style=" background:#F8F8F8; line-height:0; margin-top:40px; padding:50.0% 0; text-align:center; width:100%;"> <div style=" background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAMAAAApWqozAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAMUExURczMzPf399fX1+bm5mzY9AMAAADiSURBVDjLvZXbEsMgCES5/P8/t9FuRVCRmU73JWlzosgSIIZURCjo/ad+EQJJB4Hv8BFt+IDpQoCx1wjOSBFhh2XssxEIYn3ulI/6MNReE07UIWJEv8UEOWDS88LY97kqyTliJKKtuYBbruAyVh5wOHiXmpi5we58Ek028czwyuQdLKPG1Bkb4NnM+VeAnfHqn1k4+GPT6uGQcvu2h2OVuIf/gWUFyy8OWEpdyZSa3aVCqpVoVvzZZ2VTnn2wU8qzVjDDetO90GSy9mVLqtgYSy231MxrY6I2gGqjrTY0L8fxCxfCBbhWrsYYAAAAAElFTkSuQmCC); display:block; height:44px; margin:0 auto -44px; position:relative; top:-22px; width:44px;"></div></div> <p style=" margin:8px 0 0 0; padding:0 4px;"> <a href="https://www.instagram.com/p/BMNi4XWDIlM/" style=" color:#000; font-family:Arial,sans-serif; font-size:14px; font-style:normal; font-weight:normal; line-height:17px; text-decoration:none; word-wrap:break-word;" target="_blank">Ugh this is what happens when you allow dnf update to automatically install a new kernel that doesn&#39;t play well with your proprietary @nvidiageforce @nvidia drivers.  Time to troubleshoot. I better not lose the whole system.</a></p> <p style=" color:#c9c8cd; font-family:Arial,sans-serif; font-size:14px; line-height:17px; margin-bottom:0; margin-top:8px; overflow:hidden; padding:8px 0 7px; text-align:center; text-overflow:ellipsis; white-space:nowrap;">A video posted by Ernest Yeung (@ernestyalumni) on <time style=" font-family:Arial,sans-serif; font-size:14px; line-height:17px;" datetime="2016-10-31T03:07:54+00:00">Oct 30, 2016 at 8:07pm PDT</time></p></div></blockquote>
 <script async defer src="//platform.instagram.com/en_US/embeds.js"></script>
+-->
 
 <!-- <video width="100%" height="100%">
 <source src="https://scontent-lax3-1.cdninstagram.com/t50.2886-16/14936067_1878126812406187_9083488430947565568_n.mp4" type="video/mp4"></video> -->
+
+** 20161031 update **
+
+I was on an administrator account and I had forgotten my prior experience and learned admonition **NOT** to do `dnf update` and I accidentally ran
+
+```
+dnf update
+```
+
+*I had done this before and written about this and the subsequent recovery, before, in the post <a href="https://ernestyalumni.wordpress.com/2016/05/07/fedora-23-workstation-linuxnvidia-geforce-gtx-980-ti-my-experience-log-of-what-i-do-and-find-out/">Fedora 23 workstation (Linux)+NVIDIA GeForce GTX 980 Ti: my experience, log of what I do (and find out)</a>, and also up above in this `README.md`.*
+
+### Fix
+
+I relied upon 2 webpages for the critical, almost life-saving, terminal commands to recover video output and the previous, working "good" kernel - they were such a life-saver that they're worth repeating *and* I've saved a html copy of the 2 pages onto this github repository:
+
+* [if note true then false "Fedora 24/23/22 nVidia Drivers Install Guide"](https://www.if-not-true-then-false.com/2015/fedora-nvidia-guide/)
+* [Step by step how to remove Fedora kernel](http://www.labtestproject.com/using_linux/remove_fedora_kernel.html) - *very crucial* in removing the offending new kernel that `dnf update` automatically had installed.  
+
+#### See what video card is there and all kernels installed and present, respectively
+
+```
+lspci | grep VGA
+lspci | grep -E "VGA|3D"
+lspci | grep -i "VGA" 
+
+uname -a
+```
+
+#### Remove the offending kernel that was automatically installed by `dnf install`
+
+Critical commands:
+
+```
+rpm -qa | grep ^kernel
+
+uname -r
+
+sudo yum remove kernel-core-4.7.9-100.fc23.x86_64 kernel-devel-4.7.9-100.fc23.x86_64 kernel-modules-4.7.9-100.fc23.x86_64 kernel-4.7.9-100.fc23.x86_64 kernel-headers-4.7.9-100.fc23.x86_64
+```
+
+#### Install NVidia drivers to, at least, recover video output
+
+While at the terminal prompt (in low-resolution), change to the directory where you had downloaded the NVidia drivers (hopefully it's there somewhere already on your hard drive because you wouldn't have web browser capability without video output):
+
+```
+sudo sh ./NVIDIA-Linux-x86_64-361.42.run
+reboot
+
+dnf install gcc
+dnf install dkms acpid
+dnf install kernel-headers
+
+echo "blacklist nouveau" >> /etc/modprobe.d/blacklist.conf
+
+cd /etc/sysconfig
+grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg
+
+dnf list xorg-x11-drv-nouveau
+
+dnf remove xorg-x11-drv-nouveau
+cd /boot
+mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r)-nouveau20161031.img
+dracut /boot/initramfs-$(uname -r).img $(uname -r)
+systemctl set-default multi-user.target
+```
+
+
+
+## Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
 
