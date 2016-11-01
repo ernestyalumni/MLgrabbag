@@ -220,12 +220,12 @@ deviceQuery, CUDA Driver = CUDART, CUDA Driver Version = 8.0, CUDA Runtime Versi
 Result = PASS
 ```
 
-# Getting the other samples to run, getting CUDA to have graphics capabilities, soft symbolic linking to the existing libraries.
+## Getting the other samples to run, getting CUDA to have graphics capabilities, soft symbolic linking to the existing libraries.
 
 The flow or general procedure I ended up having to do was to use `locate` to find the relevant `*.so.*` or `*.h` file for the missing library or missing header, respectively, and then making soft symbolic links to them with the `ln -s` command.  I found that some of the samples have different configurations for in which directory the graphical libraries are (GL, GLU, X11, glut, etc.) than other samples in the samples included by NVIDIA.  
 
 
-## Why do I see "nvcc: No such file or directory" when I try to build a CUDA application 
+### Why do I see "nvcc: No such file or directory" when I try to build a CUDA application 
 
 [NVIDIA CUDA Getting Started Guide for Linux - CUDA_Getting_Started_Linux.pdf](http://developer.download.nvidia.com/embedded/L4T/r23_Release_v2.0/CUDA/CUDA_Getting_Started_Linux.pdf?autho=1463194964_12deb625011712b74e3df117272a90ea&file=CUDA_Getting_Started_Linux.pdf)
 
@@ -234,4 +234,7 @@ The flow or general procedure I ended up having to do was to use `locate` to fin
 $ export LD_LIBRARY_PATH=/usr/local/cuda-7.0/lib:$LD_LIBRARY_P
 `
 
+## Recovering from disastrous `dnf update` that adds a new kernel and trashes video output
+
+[`dnf update` after a long time, and having forgotten to **NOT** do this](https://scontent-lax3-1.cdninstagram.com/t50.2886-16/14936067_1878126812406187_9083488430947565568_n.mp4)
 
