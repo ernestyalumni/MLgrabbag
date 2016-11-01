@@ -307,12 +307,34 @@ dnf list xorg-x11-drv-nouveau
 
 dnf remove xorg-x11-drv-nouveau
 cd /boot
+
 mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r)-nouveau20161031.img
+```
+(the last command, with the output file name, the output file's name is arbitrary)
+
+```
 dracut /boot/initramfs-$(uname -r).img $(uname -r)
 systemctl set-default multi-user.target
 ```
 
 
 
+
 ## Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
+
+
+
+### Updating the NVidia proprietary driver - similar to installing, but remember you have to go into the low-resolution, no video driver, terminal, command line, prompt
+
+```
+chmod +x NVIDIA-Linux-x86_64-367.57.run
+systemctl set-default multi-user.target
+reboot
+
+./NVIDIA-Linux-x86_64-367.57.run
+systemctl set-default graphical.target
+reboot
+```
+
+[Download CUDA Toolkit (8.0)](https://goo.gl/photos/pwNyxqHxdffYaTK88)
 
