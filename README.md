@@ -308,16 +308,30 @@ dnf list xorg-x11-drv-nouveau
 dnf remove xorg-x11-drv-nouveau
 cd /boot
 
+## Backup old initramfs nouveau image ##
 mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r)-nouveau20161031.img
 ```
 (the last command, with the output file name, the output file's name is arbitrary)
 
 ```
+## Create new initramfs image ##
 dracut /boot/initramfs-$(uname -r).img $(uname -r)
 systemctl set-default multi-user.target
 ```
 
+At this point, you'll notice that `dnf update` and its subsequent removal would've **trashed your C++ setup**.  For at this point, I tried to do a `make` of a C++ project I had:
 
+```
+[topolo@localhost MacCor1d_gfx]$ make
+/usr/local/cuda/bin/nvcc -std=c++11 -g -G -Xcompiler "-Wall -Wno-deprecated-declarations" -L/usr/local/cuda/samples/common/lib/linux/x86_64 -lglut -lGL -lGLU -dc main.cu -o main.o
+gcc: error trying to exec 'cc1plus': execvp: No such file or directoryMakefile:21: recipe for target 'main.o' failedmake: *** [main.o] Error 1
+```
+
+So you'll have to do
+
+```
+dnf install gcc-c++
+```
 
 
 ## Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
@@ -336,7 +350,117 @@ systemctl set-default graphical.target
 reboot
 ```
 
-[Download CUDA Toolkit (8.0)](https://raw.githubusercontent.com/ernestyalumni/MLgrabbag/master/FedoraNVidiaInstallTips/CUDA8dwnloadScreenshot%20from%202016-10-31%2006-37-08.png)
+### Updating CUDA Toolkit (8.0)
 
+![Download CUDA Toolkit (8.0)](https://raw.githubusercontent.com/ernestyalumni/MLgrabbag/master/FedoraNVidiaInstallTips/CUDA8dwnloadScreenshot%20from%202016-10-31%2006-37-08.png)
 
+Then follow the instructions.  If the driver is updated already, before using the "`.run`" installation, then choose no to installing drivers - otherwise, I had chosen yes and the default for all the options.
 
+The [Linux installation guide for CUDA Toolkit 8.0](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions) is actually very thorough, comprehensive, and easy to use.  Let's look at the Post-Installation Actions, the Environment Setup:
+
+The `PATH` variable needs to include `/usr/local/cuda-8.0/bin`
+
+To add this path to the `PATH` variable:
+
+```
+$ export PATH=/usr/local/cuda-8.0/bin${PATH:+:${PATH}}
+```
+
+In addition, when using the runfile installation method, the `LD_LIBRARY_PATH` variable needs to contain `/usr/local/cuda-8.0/lib64` on a 64-bit system, or `/usr/local/cuda-8.0/lib` on a 32-bit system
+
+To change the environment variables for 64-bit operating systems:
+
+```
+    $ export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64\
+                             ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+```
+
+Indeed, prior to adding the `PATH` variable, I was getting errors when I type `nvcc` at the command line.  After doing this:
+
+```
+[propdev@localhost ~]$ export PATH=/usr/local/cuda-8.0/bin${PATH:+:${PATH}}
+[propdev@localhost ~]$ env | grep '^PATH'
+PATH=/usr/local/cuda-8.0/bin:/home/propdev/anaconda2/bin:/home/propdev/anaconda2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/home/propdev/.local/bin:/home/propdev/bin
+[propdev@localhost ~]$ nvcc
+nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc fatal   : No input files specified; use option --help for more information
+[propdev@localhost ~]$ nvcc -V
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2016 NVIDIA Corporation
+Built on Sun_Sep__4_22:14:01_CDT_2016
+Cuda compilation tools, release 8.0, V8.0.44
+```
+I obtain what I desired - I can use `nvcc` at the command line.
+
+To get the samples that use **OpenGL**, be sure to have glut and/or freeglut installed:
+
+```
+dnf install freeglut freeglut-devel
+```
+
+Now for some bloody reason (please let me know), the command 
+
+```
+    $ export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64\
+                             ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+```
+
+still didn't help me to allow my CUDA programs utilize the libraries in that `lib64` subdirectory of the CUDA Toolkit.  It seems like the programs, or the OS, wasn't seeing the link that should be there in `/usr/lib64`.  
+
+What did work was in here, [libcublas.so.7.0: cannot open shared object file](https://devtalk.nvidia.com/default/topic/845363/libcublas-so-7-0-cannot-open-shared-object-file/), with the solution at the end, from 
+[atv](https://devtalk.nvidia.com/member/2054713/), with an answer originally from [txbob](https://devtalk.nvidia.com/member/1836397/) (most likely Robert Cravello of github)
+
+> Solved. Finally I did:
+
+```
+sudo echo "/usr/local/cuda-7.0/lib64" > /etc/ld.so.conf.d/cuda.conf
+sudo ldconfig
+```
+
+> Thanks a lot txbob! 
+
+This is what I did:
+
+```
+[root@localhost ~]# sudo echo "/usr/local/cuda-8.0/lib64" > /etc/ld.so.conf.d/cuda.conf
+[root@localhost ~]# sudo ldconfig
+ldconfig: /usr/local/cuda-7.5/lib64/libcudnn.so.5 is not a symbolic link
+```
+
+and it worked; C++ programs compile with my make files.
+
+Also, files, including in the Samples for the 8.0 Toolkit, using `nvrtc` compiled and worked.  
+
+#### Fun Nvidia video card version information, details
+
+Doing
+```
+nvidia-smi
+```
+
+at the command prompt gave me this:
+
+```
+
+[propdev@localhost ~]$ nvidia-smi
+Mon Oct 31 15:28:30 2016       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 367.57                 Driver Version: 367.57                    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  GeForce GTX 980 Ti  Off  | 0000:03:00.0      On |                  N/A |
+|  0%   50C    P8    22W / 275W |    423MiB /  6077MiB |      1%      Default |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                       GPU Memory |
+|  GPU       PID  Type  Process name                               Usage      |
+|=============================================================================|
+|    0      1349    G   /usr/libexec/Xorg                               50MiB |
+|    0     19440    G   /usr/libexec/Xorg                              162MiB |
+|    0     19645    G   /usr/bin/gnome-shell                           127MiB |
+|    0     24621    G   /usr/libexec/Xorg                                6MiB |
++-----------------------------------------------------------------------------+
+```
