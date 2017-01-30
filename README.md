@@ -7,6 +7,7 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
 - Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
   * Recovering from disastrous `dnf update` that adds a new kernel and trashes video output, 2nd. time
   * Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
+- Installation of `tensorflow`, `tensorflow-gpu`  
   
 ## Notes on `theano`
 
@@ -464,3 +465,92 @@ Mon Oct 31 15:28:30 2016
 |    0     24621    G   /usr/libexec/Xorg                                6MiB |
 +-----------------------------------------------------------------------------+
 ```
+
+
+# Installation of `tensorflow`, `tensorflow-gpu` 
+
+​
+cf. https://www.tensorflow.org/get_started/os_setup   
+
+" Download cuDNN v5.1.   
+Uncompress and copy the cuDNN files into the toolkit directory. Assuming the toolkit is installed in `/usr/local/cuda`, run the following commands (edited to reflect the cuDNN version you downloaded):
+
+```   
+tar xvzf cudnn-8.0-linux-x64-v5.1-ga.tgz   
+sudo cp -P cuda/include/cudnn.h /usr/local/cuda/include    
+sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64    
+sudo chmod a+r /usr/local/cuda/include/cudnn.h /usr/local/cuda/lib64/libcudnn*    
+```    
+"
+
+for cp, -P is
+       -P, --no-dereference
+          never follow symbolic links in SOURCE
+cf. http://www.unix.com/man-page/linux/1/cp/
+In the directory that I had "unzipped" (un-tarball'ed), e.g.
+/home/propdev/Public/Cudnn
+So I did:
+```   
+sudo cp -P cuda/include/cudnn.h /usr/local/cuda/include
+```   
+Password is needed, so you have to be logged in as root or administrator.  Next,   
+
+`sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64`
+
+Note that for the `chmod`, the flags mean this:   
+a all all 3 of u,g,o, owner, group, others   
++ adds specified modes to specified classes   
+r read read a file or list a directory's contents   
+cf. https://en.wikipedia.org/wiki/Chmod
+
+I had obtained this error when I fired up `python` in terminal and tried to `import tensorflow as tf`.
+
+```   
+[topolo@localhost MLgrabbag]$ python
+Python 2.7.11 |Anaconda 4.0.0 (64-bit)| (default, Jun 15 2016, 15:21:30) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-1)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+Anaconda is brought to you by Continuum Analytics.
+Please check out: http://continuum.io/thanks and https://anaconda.org
+>>> import tensorflow as tf
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcublas.so locally
+I tensorflow/stream_executor/dso_loader.cc:119] Couldn't open CUDA library libcudnn.so. LD_LIBRARY_PATH: /usr/local/lib:/usr/local/lib:
+I tensorflow/stream_executor/cuda/cuda_dnn.cc:3459] Unable to load cuDNN DSO
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcufft.so locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcuda.so.1 locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcurand.so locally
+>>> 
+[topolo@localhost MLgrabbag]$ echo $LD_LIBRARY_PATH
+/usr/local/lib:/usr/local/lib:
+[topolo@localhost MLgrabbag]$ export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+[topolo@localhost MLgrabbag]$ echo $LD_LIBRARY_PATH
+/usr/local/cuda/lib64:/usr/local/lib:/usr/local/lib:
+[topolo@localhost MLgrabbag]$ import tensorflow as tf
+
+[topolo@localhost MLgrabbag]$ 
+[topolo@localhost MLgrabbag]$ echo $LD_LIBRARY_PATH
+/usr/local/cuda/lib64:/usr/local/lib:/usr/local/lib:
+[topolo@localhost MLgrabbag]$ python
+Python 2.7.11 |Anaconda 4.0.0 (64-bit)| (default, Jun 15 2016, 15:21:30) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-1)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+Anaconda is brought to you by Continuum Analytics.
+Please check out: http://continuum.io/thanks and https://anaconda.org
+>>> import tensorflow as tf
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcublas.so locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcudnn.so locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcufft.so locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcuda.so.1 locally
+I tensorflow/stream_executor/dso_loader.cc:128] successfully opened CUDA library libcurand.so locally
+>>> 
+```  
+
+In short, to *effectively* **add a library to the environment, `env`, do this:
+```   
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+```   
+
+- *Bazel* : I decided not to install [bazel](https://www.bazel.build/versions/master/docs/install.html)  and so I couldn't compile or build from the [github repository for bazel](https://github.com/bazelbuild/bazel/releases), but instead used pip.  
+
+
+
