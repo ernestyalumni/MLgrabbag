@@ -8,7 +8,11 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
   * Recovering from disastrous `dnf update` that adds a new kernel and trashes video output, 2nd. time
   * Might as well, while we're at it, **update** *NVidia* proprietary drivers and *CUDA Toolkit*
 - Installation of `tensorflow`, `tensorflow-gpu`  
-  
+- Sample, input data, $X$
+  * `sampleinputdataX_sklearn` - collection of sample data from `sklearn`
+- * `theano_ML.ipynb` - Coursera's *Introduction to Machine Learning*, taught by Ng, but with the syntax translated into *`theano`*, and to *run on the **GPU** *.
+    * Notably, [Week 1 Linear Algebra Review of Coursera's Machine Learning Introduction, taught by Ng](https://www.coursera.org/learn/machine-learning/supplement/xRMqw/lecture-slides) is translated into `theano` on the *GPU*
+
 ## Notes on `theano`
 
 | filename | directory | Description |
@@ -16,6 +20,7 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
 | tutorial_theano.ipynb | `./` | jupyter notebook based on Theano's documentation tutorial |
 | supervised-theano.ipynb | `./` | Further explorations of *supervised learning* with `theano`, in a jupyter notebook |
 | `simple_logreg.py` | `./` | Simple logistic regression, from Theano's documentation's tutorial |
+| `theano_ML.ipynb` | `./` | jupyter notebook based on Coursera's *Introduction to Machine Learning*, taught by Ng |
 
 - `simple_logreg.py` - from Theano's documentation and its tutorial, to run this on the GPU, I used the following:
 
@@ -469,7 +474,10 @@ Mon Oct 31 15:28:30 2016
 
 # Installation of `tensorflow`, `tensorflow-gpu` 
 
-​
+cf. [Install GPU TensorFlow From Sources w/ Ubuntu 16.04 and Cuda 8.0](https://alliseesolutions.wordpress.com/2016/09/08/install-gpu-tensorflow-from-sources-w-ubuntu-16-04-and-cuda-8-0-rc/​)
+
+[How to Install TensorFlow on Fedora with CUDA GPU acceleration](https://testinggetsreal.com/2016/12/27/how-to-install-tensorflow-on-fedora-with-cuda-gpu-acceleration/)
+
 cf. https://www.tensorflow.org/get_started/os_setup   
 
 " Download cuDNN v5.1.   
@@ -552,5 +560,14 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PAT
 
 - *Bazel* : I decided not to install [bazel](https://www.bazel.build/versions/master/docs/install.html)  and so I couldn't compile or build from the [github repository for bazel](https://github.com/bazelbuild/bazel/releases), but instead used pip.  
 
+### `pip` install, going `pip` route to install TensorFlow to avoid `bazel`
+
+cf. [Find all packages installed with easy_install/pip?](http://stackoverflow.com/questions/6600878/find-all-packages-installed-with-easy-install-pip)
+```   
+pip freeze   
+    
+pip show [options] <package>    
+    
+```   
 
 
