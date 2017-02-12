@@ -104,7 +104,50 @@
 Everything about Machine Learning.  
 \end{abstract}
 
+\part{Data; Data Wrangling, Data cleaning, Web crawling, Data input}
+
+\section{Sample, example data; input data}
+
+%\subsection{\verb|sklearn|, from \verb|sci-kit learn|}
+
+\subsection{sklearn, from sci-kit learn, sample data, datasets}
+
+cf. \verb|sampleinputdataX_sklearn.ipynb| 
+
+For $j=0,1,\dots d-1$, $d=$ number of ``features'',
+\[
+x_i^{(j)} \in (\mathbb{R}^N)^d = \underbrace{ \mathbb{R}^N \times \mathbb{R}^N \times \dots \times \mathbb{R}^N  }_{ d } 
+\]
+e.g. $N= 442$ (number of given observations/data)
+
+$y_i \in \mathbb{R}^N$ (represents target or result)
+
+Given data $(x_i^{(j)}, y_i) \in (\mathbb{R}^N)^d \times \mathbb{R}^N$,
+
+we can restrict data $(x_i^{(j)}, y_i)$ to subsets to train and test, for training and testing.
+
+So let $I_{\text{train}}, I_{\text{test}} \subset \lbrace 0, 1 , \dots N-1 \rbrace$ s.t. $I_{\text{train}} \cap I_{\text{test}} = \emptyset$.
+
+\emph{Want}:
+\[
+\begin{aligned}
+  (x_i^{(j)}, y_i)_{i \in I_{\text{train}} }  & \mapsto \theta_{\alpha}   \\ 
+  (\mathbb{R}^{ |I_{\text{train}} |})^d \times \mathbb{R}^{|I_{\text{train}}|} & \to \mathbb{R}^{|d|} 
+  \end{aligned}
+\]
+and so further, I think the idea is
+\[
+\begin{aligned}
+  (x_i^{(j)}, y_i)_{i \in I_{\text{test}} }  & \xrightarrow{L_{\theta_{\alpha}} } L_{\theta_{\alpha}}( \theta_{\alpha}(x_i^{(j)}, y_i) ) \\ 
+(\mathbb{R}^{ |I_{\text{test}}|})^d \times \mathbb{R}^{ |I_{\text{test}}|} & \to \mathbb{R}
+  \end{aligned}
+\]
+
 \part{Introduction}
+
+
+
+
 
 \subsubsection{Terminology} \quad \\ 
 inputs $\equiv $ independent variables $\equiv $ predictors (cf. statistics) $ \equiv $ features (cf. pattern recognition) \\
@@ -258,6 +301,12 @@ Refer to
 1\xrightarrow{P} X
 \]
 morphism $P:1\to X \in \text{Mor}\mathcal{P}$ as probability measure or distribution on $X$.  
+
+
+
+\section{Deep Learning}
+
+Deep Learning Tutorial \cite{LISA2015}
 
 
 
@@ -1081,11 +1130,365 @@ So I'll speculate that in this case, \verb|cube| is a functor, and in particular
 \end{gathered}
 \]
 
+cf.  Arrays, from Fitzpatrick \cite{Fitz}
+
+\[
+\text{Types} \xrightarrow{ \text{ declaration } } \text{arrays}
+\]
+If $x\in \text{Obj}\text{arrays}$,
+\[
+\& x[0] \in \text{Memory} \xrightarrow{ == } x \in \text{ pointer } (\text{to 1st element of array})
+\]
+
+
+cf. Section 2.13 Character Strings from Fitzpatrick \cite{Fitz}
+
+\begin{lstlisting}
+  char word[20] = ``four''
+  char *word = ``four''
+\end{lstlisting}
+
+cf. C$++$ extensions for C according to Fitzpatrick \cite{Fitz}
+\begin{itemize}
+\item simplified syntax to pass by reference pointers into functions
+\item inline functions
+\item variable size arrays \begin{lstlisting}
+  int n;
+  double x[n];
+  \end{lstlisting}
+\item complex number class
+\end{itemize}
+
 
 \subsubsection{Need a CUDA, C, C$++$, IDE?  Try Eclipse!}
 
 This website has a clear, lucid, and pedagogical tutorial for using Eclipse: \href{https://www.fayewilliams.com/2011/06/28/creating-your-first-c-program-in-eclipse/}{	
 Creating Your First C++ Program in Eclipse}.  But it looks like I had to pay.  Other than the well-written tips on the webpage, I looked up stackexchange for my Eclipse questions (I had difficulty with the Eclipse documentation).  
+
+\part{Machine Learning}
+
+cf. Machine Learning - Introduction, from Coursera.  Dr. Andrew Ng.
+
+\begin{enumerate}
+\item Week 1
+  \begin{itemize}
+  \item Linear Regression with One Variable
+    \begin{itemize}
+    \item Model and Cost Function
+      \begin{itemize}
+      \item Model Representation
+      \item Cost Function
+      \item Cost Function - Intuition I
+      \item Cost Function - Intuition II
+      \end{itemize}
+    \item Parameter Learning
+      \begin{itemize}
+      \item Gradient Descent
+      \item Gradient Descent Intuition
+        \item Gradient Descent For Linear Regression
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+  \end{enumerate}
+cf. Linear Regression with One Variable
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/db3jS/model-representation}{Model Representation; Week 1 Linear Regression with 1 Variable, Coursera Machine Learning, Ng}
+
+For hypothesis $h$,
+\[
+\begin{aligned}
+  & h_{\theta} : \mathbb{R}^d \to \mathbb{R} \\ 
+  & h_{\theta} : x \mapsto   h_{\theta}(x)  \qquad \, \text{ (prediction of $y$ for $x$)}
+  \end{aligned}
+\]
+$h_{\theta} \in L(\mathbb{R}^d, \mathbb{R})$
+
+\[
+\begin{aligned}
+  & h_{\theta} : \mathbb{R}^{ | \theta | } \to L(\mathbb{R}^d , \mathbb{R})  \\ 
+  &  \theta \mapsto h_{\theta}
+  \end{aligned}
+\]
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/rkTp3/cost-function}{Cost Function; Week 1, Coursera, Machine Learning, Ng}
+
+So for parameters
+\[
+\theta \in \mathbb{R}^{ |\theta| }
+\]
+define a \emph{cost function}
+\begin{equation}
+  J(\theta) = \frac{1}{2 m} \sum_{i=1}^m (h_{\theta}(x_i) - y_i)^2 
+\end{equation}
+
+Find
+\[
+\min_{\theta} J(\theta) = ? (???)
+\]
+for
+\[
+J : \mathbb{R}^{ |\theta| } \to \mathbb{R}
+\]
+
+Actually,
+\begin{equation}
+  \begin{aligned}
+    & J(\theta, (x_i, y_i)_{i \in I_{\text{train}}} ) \\ 
+    & J: \mathbb{R}^{ |\theta|} \times (\mathbb{R}^d)^m \times \mathbb{R}^m \to \mathbb{R}
+    \end{aligned}
+ \end{equation}
+$m=$ number of training examples $= |I_{\text{train}}|$.  
+
+Considering
+\[
+H(\theta + \Delta \theta ) \approx J(\theta) + \text{grad}J(\theta) \cdot \Delta \theta + \frac{1}{2t} \| \Delta \theta \|^2
+\]
+Suppose $\Delta \theta \equiv \Delta \theta(t) = t\Delta \theta$
+
+$\Delta \theta \approx - \gamma \text{grad}J(\theta)$ is an ansatz, $\gamma$ small enough.
+
+Then assume $J$ convex, use this ansatz by plugging in, with Lipshitz condition
+\[
+\| \text{grad}J(\theta + \Delta \theta) - \text{grad}J(\theta) \| \leq L \| \Delta \theta \| 
+\]
+some constant $L > 0$,
+
+\begin{equation}
+\begin{aligned}
+  & \theta_{n+1}^i = \theta^i_n - \gamma_n (\text{grad}J(\theta))^i \\ 
+ & \gamma_n = \frac{ (\theta^i_n - \theta^i_{n-1} ) (\text{grad}_{\theta}J(x_n) - \text{grad}_{\theta}J(x_{n-1}))^i }{ \| \text{grad}_{\theta} J(x_n) - \text{grad}_{\theta}J(x_{n-1})\|^2 } = \frac{ (\theta_n - \theta_{n-1} )\cdot  (\text{grad}_{\theta}J(x_n) - \text{grad}_{\theta}J(x_{n-1})) }{ \| \text{grad}_{\theta} J(x_n) - \text{grad}_{\theta}J(x_{n-1})\|^2 }
+  \end{aligned}
+  \end{equation}
+
+or as Ng points out in the \href{https://www.coursera.org/learn/machine-learning/supplement/2GnUg/gradient-descent}{Gradient Descent lesson recap}, the correct way is to store in temporary variables first:
+
+\begin{equation}
+\begin{aligned}
+  & \text{temp}  = \theta^i_n - \gamma_n (\text{grad}J(\theta))^i \\
+  & \theta^i_{n+1} = \text{temp}
+\end{aligned}
+\end{equation}
+where $\text{temp} \in \mathbb{R}^{|\theta|}$
+
+In the lesson recap for \href{https://www.coursera.org/learn/machine-learning/supplement/QKEdR/gradient-descent-intuition}{Gradient Descent Intuition}, Ng denotes the learning rate $\alpha \in \mathbb{R}$ with $\alpha$, but note that it's denoted as $\gamma$ or \verb|gamma| for \verb|sci-kit learn|.  So be aware of different notations.  Nevertheless, the learning rate can be a constant, but even then, choosing it is nontrivial.
+
+\subsubsection{Testing many hypotheses at the same time, via refactoring the matrix}
+
+In \href{https://www.coursera.org/learn/machine-learning/lecture/dpF1j/matrix-matrix-multiplication}{Linear Algebra Review of Week 1, Matrix Matrix Multiplication}, Ng provided a useful tip in refactoring the matrix of hypotheses $h_{\theta}$ so to test multiple number of hypotheses at the same time on the same input data, $X$.
+
+Mathematically, beginning with
+
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.1em, column sep=5em, minimum width=2em]
+  {
+  h: \mathbb{R}^{ |\theta| } & L(\mathbb{R}^d, \mathbb{R}) \\
+    \theta  & h_{\theta}  \\ 
+  };
+  \path[->]
+  (m-1-1) edge node [auto] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [auto] {$$} (m-2-2)
+  ;
+  \end{tikzpicture}
+\]
+Consider testing $H$ different hypotheses, $\underbrace{\mathbb{R}^{ |\theta|} \times \dots \times \mathbb{R}^{ |\theta|} }_{H} \equiv \otimes_{i=1}^H \mathbb{R}^{ |\theta | }$,
+
+so treat
+\[
+\otimes_{i=1}^H \mathbb{R}^{|\theta| } = \text{Mat}_{\mathbb{R}}(|\theta|,H)
+\]
+and so
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.1em, column sep=5em, minimum width=2em]
+  {
+  h: \otimes_{i=1}^H \mathbb{R}^{ |\theta| } = \text{Mat}_{\mathbb{R}}(|\theta|,H)  & \otimes_{i=1}^H L(\mathbb{R}^d, \mathbb{R}) \\
+    \theta^{(i)}  & h_{\theta^{(i)}}  \\ 
+  };
+  \path[->]
+  (m-1-1) edge node [auto] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [auto] {$$} (m-2-2)
+  ;
+\end{tikzpicture}
+\]
+
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/OAOhO/non-linear-hypotheses}{Week 4, Non-linear Hypotheses video of Motivations for Coursera's Machine Learning by Ng}
+
+For a sigmoid function $g$, consider
+\[
+g(\theta_0 + \theta_1 x_1 + \theta_2 x_2 + \theta_3 x_1 x_2 + \theta_4 x_1^2 x_2 + \theta_5 x_1^3 x_2 + \theta_6 x_1 x_2^2 + \dots ) 
+\]
+If $n$ large (Ng's notation), $d=\text{dim}\mathbb{R}^d$, number of features for training (data) set, \\
+for including quadratic features,
+\[
+\begin{gathered}
+\begin{aligned}
+  & x_1^2, x_1x_2, x_1 x_3 , x_1 x_4 \dots x_1 x_{100} \\ 
+  & x_2^2 , x_1x_3, \dots 
+  \end{aligned} \\
+\approx \mathcal{O}(n^2) \approx \frac{n^2}{2}  \qquad \, (\mathcal{O}(d^2) \approx \frac{d^2}{2} )
+\end{gathered}
+\]
+
+e.g. computer vision, \\
+e.g. $50 \times 50 $ pixel images, \\
+$n=2500$ \\
+ pixel intensity $\in [0,255] $ \\ 
+ rgb $ \in [0,255]^3$
+
+ \[
+\begin{aligned}
+  g:\mathbb{R}^{ |\theta| } & \to L(\mathbb{R}^d,\mathbb{R}) \\ 
+ \theta & \mapsto g(\theta) \equiv g_{\theta}
+\end{aligned}
+\]
+$n \equiv d=2$.
+
+Consider
+\[
+\sum_{ \substack{ a_1,a_2 =0 \\ i=a_1 + 2a_2 } } \theta^{(i)}x_1^{a_1} x_2^{a_2} 
+\]
+and so for this example
+\[
+g(\theta)(x_1,x_2) = g\left( \sum_{ \substack{ a_1,a_2=0 \\ i=a_1+2a_2 } } \theta^{(i)}x_1^{a_1} x_2^{a_2} \right)
+\]
+
+For computer vision, consider
+\[
+x\in \mathbb{R}^d \text{ with } d = n^x \times n^y 
+\]
+and in particular, given pixel intensity or rgb range,
+\[
+\begin{aligned}
+  & x\in [0,255]^d \\ 
+  & x\in [0,255]^{3d}
+\end{aligned}
+\]
+
+ 
+
+
+
+cf. \href{https://www.coursera.org/learn/machine-learning/supplement/Bln5m/model-representation-i}{Model Representation I of Week 4, Coursera's Machine Learning Introduction with Ng}
+
+The notes at the end of each video segment \textbf{help very much}.
+
+For input
+\[
+\mathbf{x} \in \mathbb{R}^d
+\]
+e.g. $d=1,2,3,\text{ or } 4, \dots $
+
+$x_0  = $ ``bias unit'', input node 0, $x_0 =1$ always (Ng).
+
+
+Sigmoid (logistic) activation function $\equiv a$.
+
+\[
+a_i^{(j)} \equiv \text{ ``activation'' of unit $i$ in layer $j$ }
+\]
+$j \in \lbrace 2, \dots , N-1 \rbrace$, $j=1$ is input layer, $j=N$ is output layer.
+
+\[
+a_i^{(j)} = g(\Theta_{ik}^{(j-1)} x_k)
+\]
+
+\[
+j\xrightarrow{ \Theta^{(j)} } j+1 
+\]
+$\Theta^{(j)}$ matrix of weights controlling function mapping from layer $j$ to layer $j+1$.
+\[
+h_{\Theta}(x) = a_1^{(N)} = g(\Theta_{1k}^{(N-1)} a_k^{(N-1)} )
+\]
+$\forall \, $ layer $j$, $\exists \, $ matrix of weights $\Theta^{(j)}$.
+
+If $s_j$ units in layer $j$, $s_{j+1}$ units in layer $j+1$, $\text{dim}\Theta^{(j)} = s_{j+1} \times (s_j + 1)$
+
+
+If $N=2$, (1 neuron or only 1 hidden layer)
+
+\[
+\begin{gathered}
+  x = (x_i)_{i=1 \dots d} \in \mathbb{R}^d, \qquad \, y \in \mathbb{R} , \, x_0 =1 \\ 
+ y = h(\Theta_{1k}^{(1)} x_k^{(1)} ) = h(\Theta_{1k}^{(1)}x_k) = h(\Theta^{(1)} )(x)
+  \end{gathered}
+\]
+e.g. $h(z) = \frac{1}{ 1 + e^z} $ logistic function.
+
+Neural Network, input layer, output layer, and hidden layers.
+
+\begin{equation}
+  \Theta_{ik}^{(j)}x_k \mapsto g a_i^{(j+1)}   \qquad \, \begin{aligned} & k = 0,1, \dots s_j \\
+    & i = 1,2, \dots s_{j+1} \end{aligned}
+  \end{equation}
+
+Note that $y$ can be $y \in \mathbb{R}^M$, not just $M=1$.
+
+
+\href{https://www.coursera.org/learn/machine-learning/supplement/YlEVx/model-representation-ii}{Model Representation II}
+
+$z_i^{(j)}$, $i=1, \dots s_j$, layer $j=1, \dots N$.
+
+\begin{equation}
+  g: z_i^{(j)} \mapsto a_i^{(j)}
+  \end{equation}
+
+e.g. $z_i^{(j)} = \Theta_{ik}^{(j-1)} x_k$, $k=0,1\dots d$.
+
+Set $x=a^{(1)}$ for input layer.
+
+\begin{equation}
+  \begin{gathered}
+    \Theta^{(j-1)} \in \text{Mat}_{\mathbb{R}}( (d+1), s_j) \\
+    \Theta^{(j-1)} : a^{(j-1)} \in \mathbb{R}^{d+1} \mapsto z^{(j)} \in \mathbb{R}^{s_j} \xrightarrow{ g} a^{(j)} \in \mathbb{R}^{s_j} \xrightarrow{ a_0^{(j)} = 1 } a^{(j)} \in \mathbb{R}^{s_j + 1}
+    \end{gathered}
+  \end{equation}
+
+For the $j=N$ case, ``output'' layer,
+\begin{equation}
+\begin{gathered}
+  \Theta^{(N-1)} : a^{(N-1)} \mapsto z^N \in \mathbb{R} \xrightarrow{ g} g(z^N) = a^N = h_{\Theta}(x) \in \mathbb{R} \qquad \, \Theta^{(N-1)} \in \text{Mat}_{\mathbb{R}}( s_{N-1} +1, 1)
+  \end{gathered}
+  \end{equation}
+In general,
+\[
+\begin{gathered}
+  \Theta^{(N-1)} : a^{(N-1)} \mapsto z^N \in \mathbb{R} \xrightarrow{ g} g(z^N) = a^N = h_{\Theta}(x) \in \mathbb{R}^M \qquad \, \Theta^{(N-1)} \in \text{Mat}_{\mathbb{R}}( s_{N-1} +1, M)
+\end{gathered}
+\]
+
+
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/CipHf/learning-with-large-datasets}{Learning With Large Datasets}, Quiz of Week 10, Gradient Descent with Large Datasets; Learning with Large Datasets.
+
+Suppose you are facing a supervised learning problem and have a very large dataset ($m=100,000,000$).  How can you tell if using all of the data is likely to perform much better than using a small subset of the data (say $m=1,000$)?
+
+Plot a learning curve ($J_{\text{train}}(\theta)$ and $J_{CV}(\theta)$, plotted as a function of $m$) for a range of values of $m$ and verify that the algorithm has high variance when $m$ is small.  
+
+
+%for some range of values of $m$ (say up to $m=1,000$) and verify that the algorithm has bias when $m$ is small.
+
+
+
+
+
+\part{Notes}
+
+
+Restricted Boltzmann machine - estimate a probability distribution
+
+Recurrent neural network - creates an internal state of the network which allows it to exhibit dynamic temporal behavior
+
+
+
+
+
+
 
 
 
@@ -1110,7 +1513,8 @@ CS229 Stanford University.  \url{http://cs229.stanford.edu/materials.html}
 \bibitem{Fitz}
 Richard Fitzpatrick.  ``Computational Physics.''  \url{http://farside.ph.utexas.edu/teaching/329/329.pdf}
 
-
+\bibitem{LISA2015}
+LISA lab, University of Montreal.  Deep Learning Tutorial.  \url{http://deeplearning.net/tutorial/deeplearning.pdf}  September 2015.  
 
 
 \end{thebibliography}
