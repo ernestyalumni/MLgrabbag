@@ -14,5 +14,10 @@ from theano import sandbox
 
 from linreg_gradDes import LinearReg, LinearReg_loaded
 
+# for gradDes.py in ML/
+
 from gradDes import LogReg
 
+# for NN.py in ML/
+import NN
+from NN import Layer, cost_functional, cost_functional_noreg, gradientDescent_step, predicted_logreg, MLP
