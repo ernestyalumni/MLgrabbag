@@ -95,6 +95,19 @@
 
 \maketitle
 
+
+From the beginning of 2016, I decided to cease all explicit crowdfunding for any of my materials on physics, math.  I failed to raise \emph{any} funds from previous crowdfunding efforts.  I decided that if I was going to live in \emph{abundance}, I must lose a scarcity attitude.  I am committed to keeping all of my material \textbf{open-sourced}.  I give all my stuff \emph{for free}.   
+
+In the beginning of 2017, I received a very generous donation from a reader from Norway who found these notes useful, through \emph{PayPal}.  If you find these notes useful, feel free to donate directly and easily through \href{https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=ernestsaveschristmas%2bpaypal%40gmail%2ecom&lc=US&item_name=ernestyalumni&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted}{PayPal}, which won't go through a 3rd. party such as indiegogo, kickstarter, patreon.  Otherwise, under the \emph{open-source MIT license}, feel free to copy, edit, paste, make your own versions, share, use as you wish.    
+
+\noindent gmail        : ernestyalumni \\
+linkedin     : ernestyalumni \\
+tumblr       : ernestyalumni \\
+twitter      : ernestyalumni \\
+youtube      : ernestyalumni \\
+
+
+
 \tableofcontents
 
 
@@ -1165,7 +1178,7 @@ cf. C$++$ extensions for C according to Fitzpatrick \cite{Fitz}
 This website has a clear, lucid, and pedagogical tutorial for using Eclipse: \href{https://www.fayewilliams.com/2011/06/28/creating-your-first-c-program-in-eclipse/}{	
 Creating Your First C++ Program in Eclipse}.  But it looks like I had to pay.  Other than the well-written tips on the webpage, I looked up stackexchange for my Eclipse questions (I had difficulty with the Eclipse documentation).  
 
-\part{Machine Learning}
+\part{Machine Learning with Deep Learning}
 
 cf. Machine Learning - Introduction, from Coursera.  Dr. Andrew Ng.
 
@@ -1474,7 +1487,773 @@ Plot a learning curve ($J_{\text{train}}(\theta)$ and $J_{CV}(\theta)$, plotted 
 %for some range of values of $m$ (say up to $m=1,000$) and verify that the algorithm has bias when $m$ is small.
 
 
+cf. 1.4 Regularized cost function
 
+\[
+\begin{gathered}
+  J(\theta) = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \left[ -y_k^{(i)} \log{ ((h_{\theta}(x^{(i)} ) )_k ) } - (1-y_k^{(i)} ) \log{ (1- (h_{\theta}(x^{(i)} ) )_k ) } \right] + \\
++ \frac{\lambda}{2m} \left[ \sum_{j=1}^{s_2} \sum_{ k=1}^{ d} (\Theta_{j,k}^{(1)} )^2 + \sum_{j=1}^{K} \sum_{k=1}^{s_2} (\Theta^{(2)}_{j,k} )^2 \right]
+  \end{gathered}
+\]
+
+\section{Feedforward; Feedforward Propagation and Prediction}
+
+Given ordered sequence of linear transformations $L$, $L\geq 2$,
+\begin{equation}
+\begin{gathered}
+  \Theta^{(l)} \in \text{Mat}_{\mathbb{R}}( s_l + 1, s_{l+1} ) \text{ i.e. } s_{l+1} \times (s_l +1) \text{ matrix size }, \, \forall \, l = 1,2, \dots L - 1  \\
+  \begin{aligned}
+    & \Theta^{(l)} : \mathbb{R}^{s_l +1} \to \mathbb{R}^{s_{l+1} } \\ 
+    & \Theta^{(l)} : a^{(l)} \mapsto z^{(l+1) } = \Theta^{(l)} a^{(l)} = \Theta_{ij}^{(l)} a_j^{(l)} = z_i^{(l+1)}
+    \end{aligned}
+\end{gathered}
+\end{equation}
+$a^{(l)} \equiv $ ``activation'' of layer $l$.  
+
+$s_l \equiv $ ``layer size'' of layer $l$, number of units or nodes in layer $l$
+
+\begin{equation}
+\begin{aligned}
+  & g: \mathbb{R}^{s_l } \to \mathbb{R}^{s_l} \\ 
+  & g : z^{(l)} \mapsto g(z^{(l)} )
+  \end{aligned}
+  \end{equation}
+e.g. $g$ sigmoid function.
+
+Remember to add $a_0^{(l)} = 1$, \, $\forall \, l = 1, \dots L-1$, i.e. $\forall \, $ input layer and hidden layers.
+
+For $l=1$, the so-called \emph{input layer}, is such that
+\begin{equation}
+ (a_0^{(1)} = 1, x) = a^{(1)}
+\end{equation}
+
+For $l = 1,2, \dots L-1$,
+\begin{equation}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=3em, column sep=4em, minimum width=2em]
+  {
+    \mathbb{R}^{s_l}  &  \mathbb{R}^{ s_l +1 }   & \mathbb{R}^{s_{l+1} } & \mathbb{R}^{s_{l+1} }  \\
+a^{(l)} & (a_0^{(l)} = 1, a^{(l)} ) & z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$a_0^{(l)}=1$} (m-1-2)
+  (m-1-2) edge node [above] {$\Theta^{(l)}$} (m-1-3)
+  (m-1-3) edge node [above] {$g$} (m-1-4) 
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$a_0^{(l)}=1$} (m-2-2)
+  (m-2-2) edge node [above] {$\Theta^{(l)}$} (m-2-3)
+  (m-2-3) edge node [above] {$g$} (m-2-4) 
+  ;
+\end{tikzpicture}
+  \end{equation}
+
+\section{Backpropagation; Backpropagation algorithm}
+
+First, do feedforward on \emph{each} training example $t$, i.e.
+\begin{equation}
+\begin{gathered}
+  \forall \, t = 1,2 \dots m  \\
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.2em, column sep=12em, minimum width=2em]
+  {
+    \mathbb{R}^d & \mathbb{R}^K \\
+    x^{(t)} & a^{(L)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$ (g \circ \Theta^{(l)} \circ (a_0^{(l)} = 1) \times \cdot )^{L-1}  $} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$ (g \circ \Theta^{(l)} \circ (a_0^{(l)} = 1) \times \cdot )^{L-1} $} (m-2-2)
+  ;
+\end{tikzpicture}
+  \end{gathered}
+  \end{equation}
+For $K=1$ or $K>1$ e.g. $K=10$ for multi-class logistic regression.
+
+In fact, we obtain an ordered sequence of ``activation'' vectors:
+
+\begin{equation}
+\begin{gathered}
+  \forall \, t = 1,2 \dots m  \\
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.2em, column sep=12em, minimum width=2em]
+  {
+    \mathbb{R}^d & \mathbb{R}^{s_2} \times \mathbb{R}^{s_2} \times \mathbb{R}^{s_3} \times \mathbb{R}^{s_3} \times \dots \times \mathbb{R}^K \\
+    x^{(t)} & z^{(2)}, a^{(2)}, z^{(3)}, a^{(3)}, \dots , a^{(L)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$ (g \circ \Theta^{(l)} \circ (a_0^{(l)} = 1) \times \cdot )^{L-1}  $} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$ (g \circ \Theta^{(l)} \circ (a_0^{(l)} = 1) \times \cdot )^{L-1} $} (m-2-2)
+  ;
+\end{tikzpicture}
+  \end{gathered}
+  \end{equation}
+
+
+From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagatio<n algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
+
+Calculate
+\begin{equation}
+\begin{aligned}
+  & \delta^{(L)} := a^{(L)} - y \\ 
+  & \delta^{(L)}_k := a_k^{(L)} - y_k \qquad \, \forall \, k = 1,2, \dots K
+  \end{aligned}
+\end{equation}
+
+For the term $((\Theta^{(L-1)})^T \delta^{(L)} )$, the matrix size dimensions of the $(\Theta^{(L-1)})^T$ are $\text{dim}( \Theta^{(L-1)} )^T = (s_{L-1}  + 1) \times s_L$.
+
+It seems that the element-wise or component-wise multiplication that seems obvious in Matlab/Octave or numpy is called the \emph{Hadamard product}, denoted $\circ$ or $\odot$.  There ought to be a homomorphism that maps this operation onto ``vectorized'' forms of these vectors that allows for, or is equipped with the operation, Hadamard product.
+
+For $m=1$,
+\[
+\delta^{(L-1)} := \left( ( \Theta^{(L-1)})^T \delta^{(L)} \right) \odot g'(z^{(L-1)}) \in \mathbb{R}^{s_{L-1} + 1} \qquad \, \forall \, k = 0 , 1, \dots s_{L-1}
+\]
+i.e.
+\[
+\begin{gathered}
+  \text{vec}(\delta^{(L-1)} ) = \text{vec} ((\Theta^{(L-1)})^T \delta^{(L)} ) \odot \text{vec}( g'(z^{(L-1)}) ) \mapsto \delta^{(L-1)} \in \mathbb{R}^{s_{L-1} + 1} \\ 
+ (s^{(L-1)} )_K := ((\Theta^{(L-1)})^T \delta^{(L)} )_K (g'(z^{(L-1)} ) )_K
+\end{gathered}
+\]
+
+Then add this term to the so-called ``accumulator matrix'' $\Delta^{(l)}$:
+\[
+\Delta^{(l)} := \Delta^{(l)} + \delta^{(l+1)} (a^{(l)})^T
+\]
+Note that prior, skip or \emph{remove} $\delta_0^{(l+1)}$ entry:
+\[
+\delta^{(l+1)} \in \mathbb{R}^{ s_{l+1} + 1} \xrightarrow{ r} \delta^{(l+1)} \in \mathbb{R}^{s_{l+1} }
+\]
+
+The whole purpose is to obtain
+\[
+\frac{ \partial }{ \partial \Theta^{(l)}_{ij} } J(\Theta) = a_j^{(l)} \delta_i^{(l+1)} = a_j^{(l)} ( (\Theta^{(l+1)})^T \delta^{(l+2)} \odot g'(z^{(l+1)}) )_i  
+\]
+which can be shown.
+
+So first we had set
+\[
+\Delta_{ij}^{(l)} = 0 
+\]
+for
+\[
+\Delta^{(l)} \in \text{Mat}_{\mathbb{R}}(s_l, s_{l+1} ) \in \mathbb{R}^{s_l} \otimes \mathbb{R}^{s_{l+1}} 
+\]
+Again, it can be shown that 
+\begin{equation}
+  \Delta_{ij}^{(l)} = \frac{ \partial }{ \partial \Theta^{(l)}_{ij} } J(\Theta)
+  \end{equation}
+
+and so
+\[
+\begin{aligned}
+ & \Delta^{(l)} := \Delta^{(l)} + \delta^{(l+1)} (a^{(l)})^T \\ 
+ & \Delta^{(l)}_{ij} := \Delta^{(l)}_{ij} + \delta^{(l+1)}_j (a^{(l)})_i 
+\end{aligned}
+\]
+and so for $\forall \, t$,
+\[
+\begin{aligned}
+\begin{cases}   D_{ij}^{(l)} := \frac{1}{m} \Delta_{ij}^{(l)} + \lambda \Theta_{ij}^{(l)} & \text{ if } j \neq 0 \\
+  D_{ij}^{(l)} := \frac{1}{m} \Delta_{ij}^{(l)} & \text{ if } j = 0 \end{cases}
+  \end{aligned}
+\]
+\[
+D^{(l)} = \frac{1}{m} \sum_{t=1}^m (\Delta^{(l)})^{(t)} + \lambda \Theta^{(l)} \in \text{Mat}_{\mathbb{R}}(s_l,s_{l+1})
+\]
+
+
+In summary, we have, for the first step,
+\begin{equation}
+  \delta^{(L)} := a^{(L)} - y \in \mathbb{R}^K
+  \end{equation}
+
+\begin{equation}
+  \delta^{(l)} = (\Theta^{(l)})^T \delta^{(l+1)} \odot g'(z^{(l)}) \in \mathbb{R}^{s_l + 1} , \qquad \, l = L-1,L-2, \dots 2, \qquad \, (L-2) \text{ steps } 
+  \end{equation}
+
+and so for
+\begin{equation}
+(\Delta^{(l)})^{(t)} := (\delta^{(l+1)}(a^{(l)})^T)^{(t)}
+\end{equation}
+\begin{equation}
+D^{(l)} = \frac{1}{m} \sum_{t=1}^m (\Delta^{(l)})^{(t)}  + \lambda \Theta^{(l)} \in \text{Mat}^l_{\mathbb{R}}(s_l,s_{l+1})
+\end{equation}
+with $D^{(l)} \sim \frac{ \partial }{ \partial \Theta_{ij}^{(l)} } J(\Theta)$.
+
+And so
+\begin{equation}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.2em, column sep=12em, minimum width=2em]
+         {
+            (\mathbb{R}^{s_2})^2 \times (\mathbb{R}^{s_3})^2 \times \dots \times (\mathbb{R}^K)^2 & \text{Mat}_{\mathbb{R}}(s_1,s_s) \times \text{Mat}_{\mathbb{R}}(s_2,s_3) \times \dots \times \text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \\
+     z^{(2)}, a^{(2)}, z^{(3)}, a^{(3)}, \dots , z^{(L)}, a^{(L)} & (\Delta^{(1)})^{(t)}, (\Delta^{(2)})^{(t)}, \dots , (\Delta^{(L-1)})^{(t)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$    $} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$   $} (m-2-2)
+  ;
+\end{tikzpicture}
+  \end{equation}
+$\forall \, t = 1, \dots m$, then obtaining
+\begin{equation}
+  D^{(l)} \sim \frac{ \partial }{ \partial \Theta^{(l)}_{ij} }J(\Theta) \in \text{Mat}_{\mathbb{R}}(s_l,s_{l+1}) \qquad \, \forall \, l = 1,2, \dots L-1
+  \end{equation}
+
+
+To collect our facts, consider that we're given $x\in (\mathbb{R}^d)^m$, with $x_i^{(t)}$, $\begin{aligned} & \quad \\
+  & i = 1 \dots d \\
+  & t = 1 \dots m \end{aligned}$, with $\begin{aligned} & \quad \\
+  & y\in (\mathbb{R}^K)^m \\
+  & y \in \lbrace 1, 2, \dots K \rbrace^m \qquad \, (\text{classifier}) \end{aligned}$.
+
+``layer'' $l=1,2, \dots L-1$
+For input layer $\begin{aligned}
+  & \Theta^{(1)} : \mathbb{R}^{d+1} \to \mathbb{R}^{s_2} \\
+  & \Theta^{(1)}: a^{(1)} \mapsto \Theta^{(1)}a^{(1)} = z^{(1)} \end{aligned}$, with $a^{(1)} = (1,x^{(t)})$.
+
+Instead of thinking of separate ``layers'', one should really think of encapsulating the relation, or arrows, or mappings between ``layers'':
+
+\begin{equation}
+ \begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.5em, column sep=4em, minimum width=2em]
+  {
+    \mathbb{R}^{d}  &  \mathbb{R}^{ d +1 }   & \mathbb{R}^{s_{2} } & \mathbb{R}^{s_{2} }  \\
+x & (a_0^{(l)} = 1, x ) & z^{(2)} & g(z^{(2)}) = a^{(2)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$a_0^{(1)}=1$} (m-1-2)
+  (m-1-2) edge node [above] {$\Theta^{(1)}$} (m-1-3)
+  (m-1-3) edge node [above] {$g$} (m-1-4) 
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$a_0^{(1)}=1$} (m-2-2)
+  (m-2-2) edge node [above] {$\Theta^{(1)}$} (m-2-3)
+  (m-2-3) edge node [above] {$g$} (m-2-4) 
+  ;
+\end{tikzpicture}
+\end{equation}
+
+
+\begin{equation}
+ \begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.5em, column sep=4em, minimum width=2em]
+  {
+    \mathbb{R}^{s_l}  &  \mathbb{R}^{ s_l +1 }   & \mathbb{R}^{s_{l+1} } & \mathbb{R}^{s_{l+1} }  \\
+a^{(l)} & (a_0^{(l)} = 1, a^{(l)} ) & z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$a_0^{(l)}=1$} (m-1-2)
+  (m-1-2) edge node [above] {$\Theta^{(l)}$} (m-1-3)
+  (m-1-3) edge node [above] {$g$} (m-1-4) 
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$a_0^{(l)}=1$} (m-2-2)
+  (m-2-2) edge node [above] {$\Theta^{(l)}$} (m-2-3)
+  (m-2-3) edge node [above] {$g$} (m-2-4) 
+  ;
+\end{tikzpicture}
+\end{equation}
+
+I found that Theano wasn't like the `\verb|.stack|` method, the ``addition'' of adding the $a_0=1$ component to a vector or matrix, as a shared variable, very much on the GPU (it indeed is a bug, \href{https://github.com/fchollet/keras/issues/152}{ Merge fails on GPU but passes on CPU \#152 }, and so I rewrote the mathematical formulation to fit in with separating the intercepts from the ``weights'' or $\Theta$.
+
+For
+\begin{equation}
+\Theta^{(l)}, b^{(l)} : \mathbb{R}^{s_l} \to \mathbb{R}^{s_l+1}
+\end{equation}
+where
+\begin{equation}
+  \begin{aligned}
+    & \Theta^{(l)} \in \text{Mat}_{\mathbb{R}}(s_l,s_{l+1}) = \mathbb{R}^{s_{l+1}} \otimes ( \mathbb{R}^{s_l})^* \\
+    & b^{(l)} \in \mathbb{R}^{s_{l+1}}
+    \end{aligned}
+  \end{equation}
+\begin{equation}
+ \begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.25em, column sep=4em, minimum width=2em]
+  {
+    \mathbb{R}^{s_l}  &   \mathbb{R}^{s_{l+1} } & \mathbb{R}^{s_{l+1} }  \\
+a^{(l)} &   z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$\Theta^{(l)}, b^{(l)}$} (m-1-2)
+  (m-1-2) edge node [above] {$g$} (m-1-3) 
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$\Theta^{(l)}, b^{(l)}$} (m-2-2)
+  (m-2-2) edge node [above] {$g$} (m-2-3) 
+  ;
+\end{tikzpicture}
+  \end{equation}
+
+\subsection{Cost functional}
+
+The cost function $J$ is really a cost \emph{functional}, to first input in the output values $y$.  So
+\begin{equation}
+\begin{aligned}
+  &  J: (\mathbb{R}^K)^m \to L(\mathbf{ (\Theta, b) }, \mathbb{R} ) \\ 
+& J: y \mapsto J_y \equiv J 
+\end{aligned}
+\end{equation}
+for a ``vector-valued'' regression, with the usual linear regression being the case of $K=1$.
+
+For $y$ taking on discrete values,
+\begin{equation}
+\begin{aligned}
+  & J: \lbrace 1, 2, \dots K \rbrace^m \to L( \mathbf{ (\Theta ,b) } , \mathbb{R} ) \\ 
+  & J: y \mapsto J_y \equiv J 
+  \end{aligned}
+  \end{equation}
+Then, we can find the cost $J((\Theta, b))$, for a particular choice of the parameters, $(\Theta,b) \in \mathbf{ (\Theta,b)}$:
+\begin{equation}
+\begin{aligned}
+ &  J_y \equiv J : \mathbf{ ( \Theta,b) } \to \mathbb{R} \\ 
+ & J: (\Theta,b) \to J(\Theta,b)
+  \end{aligned}
+  \end{equation}
+i.e. $J \in C^{\infty}((\Theta,b))$ (hopefully $J$ is smooth or at least $C^2$ differentiable, so that a Hessian can be obtained).
+
+
+For the above $\mathbf{ (\Theta,b)}$ was notation or shorthand as follows:
+
+\[
+\mathbf{ (\Theta,b ) } \equiv (\text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2}) \times (\text{Mat}_{\mathbb{R}}(s_2,s_3) \times \mathbb{R}^{s_3} ) \times \dots \times (\text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} )
+\]
+
+
+\section{Universal approximation theorem}
+
+\href{https://en.wikipedia.org/wiki/Universal_approximation_theorem}{Wikipedia: Universal Approximation Theorem}
+
+From Hornik (1991) \cite{Horn1991}, pp. 252, Section 2. Results,
+\begin{equation}
+  \mathcal{N}_k^{(n)}(\psi)  = \lbrace h :\mathbb{R}^k \to \mathbb{R} | h(x) =\sum_{j=1}^n \beta_j \psi(a_j'x- \theta_j) \rbrace
+\end{equation}
+with
+$\begin{aligned}
+  & a = (\alpha_1 , \dots \alpha_k) \\ 
+ & x = ( \xi_1, \dots, \xi_k) 
+  \end{aligned}
+$ with $a' \equiv a^T \equiv $ transpose of $a$.  
+
+For arbitrary number of hidden layers,
+\[
+\mathcal{N}_k(\psi) = \bigcup_{n=1}^{\infty}\mathcal{N}_k^{(n)}(\psi)
+\]
+The 2 very important theorems from Hornik (1991) are the following:
+\begin{theorem}
+If $\psi$ unbounded and nonconstant, then $\mathcal{N}_k(\psi)$ dense in $L^p(\mu)$, $\forall \, $ finite measure $\mu$ on $\mathbb{R}^k$
+\end{theorem}
+\begin{theorem}
+  If $\psi$ cont., bounded, nonconstant, then $\mathcal{N}_k(\psi)$ dense in $C(X)$, \, $\forall \,$ compact subsets $X$ of $\mathbb{R}^k$, \\
+  i.e. $\forall \, f\in C(X)$, $\exists \, $ sequence, $(h_n)$ s.t. $h_n \xrightarrow{n} f$ uniformly i.e. $\forall \, $ given $\epsilon >0$, $\exists \, N=N(\epsilon)$ (independent of $x\in X\subset \mathbb{R}^k$), s.t. \\
+  $|h_n(x)-f(x)| < \epsilon$ \, $\forall \, x \in X$, \, $\forall \, n \geq N(\epsilon)$
+  \end{theorem}
+I will write now a dictionary between Hornik's notation and my notation (take note, Hornik's notation $\equiv$ my notation).  
+
+$f\in C(X)$, $f:\mathbb{R}^k\to \mathbb{R}$, $k\equiv d$, so $f:\mathbb{R}^d \to \mathbb{R}$ \\
+ 
+$\psi \equiv g$, e.g. $g(z) = \frac{1}{1 + \exp{(-z)} }$ or $g(z) = \tanh{(z)}$, but equip $g$ with element-wise (component-wise) action, i.e. $g$ as a functor, $\begin{aligned} & \quad \\ 
+    & g:\mathbb{R}^k \to \mathbb{R}^k \\
+    & g:x_j\mapsto g(x_j) \end{aligned}$, i.e. $g: \mathbf{Vec} \to \mathbf{Vec}$.
+
+
+  Now $a \equiv \Theta \in \text{Mat}_{\mathbb{R}}(d,n)$,
+  \[
+g(\Theta x + b) = g(z)
+\]
+i.e. $z\in \mathbb{R}^n$,
+\[
+z:= \Theta x + b \text{ i.e. } z_j = \Theta_{jk} x_k + b_j \qquad \, g(z) \in \mathbb{R}^n
+\]
+and so, notation-wise,
+\[
+\sum_{j=1}^n \beta_j \psi(a_j'x  - \theta_j) \equiv \sum_{j=1}^n \beta_j g(\Theta_{jk} x_k +b_j)
+\]
+Consider
+\[
+\begin{aligned}
+  & \Theta^{(1)} \in \text{Mat}_{\mathbb{R}}(d,s_2), \, b^{(1)} \in \mathbb{R}^{s_2} \\ 
+  & \Theta^{(2)} \in \text{Mat}_{\mathbb{R}}(s_2,1) , \, b^{(2)} \in \mathbb{R}
+\end{aligned}
+\]
+\[
+h(x) = \Theta^{(2)}g( \Theta^{(1)}x + b^{(1)}) + b^{(2)} \in \mathcal{N}_d^{(s_2)}(g)
+\]
+so the neural net of $L$ total layers $d=1$ ``input layer'', $l=L$ is ``output layer'' is a tuple $((\Theta,b),g)\in \mathcal{N}_d^{(L)}(g)$
+
+Hornik, Stinchcombe, and White (1989) \cite{HSW1989} deals with multi-(hidden) layer networks on pp. 363, on and after Corollary 2.6.
+
+Given training data,
+\begin{equation}
+  \begin{aligned}
+    & (X,y) : \mathbb{R} \to (\mathbb{R}^d \times \mathbb{R}^k)^m \\ 
+    & (X,y)(t) \mapsto (X(t),y(t))
+    \end{aligned}
+\end{equation}
+discretize time $t\in \mathbb{R}$,
+\begin{equation}
+  \begin{aligned}
+    \mathbb{R} &  \xrightarrow{ \text{ discretize }} \mathbb{Z} \\
+ [0,T]\text{ where $T \in \mathbb{R}^+$ } & \to \lbrace 0 , 1, \dots T-1 \rbrace \text{ where } T\in \mathbb{Z}^+
+    \end{aligned}
+  \end{equation}
+
+Consider 4 different feedforwards.  Note $y(-1)=0$.
+
+\section{LSTM; Long Short Term Memory}
+
+\href{http://www.christianherta.de/lehre/dataScience/machineLearning/neuralNetworks/LSTM.php}{LSTM (Long Short Term Memory), according to Christian Herta}
+
+Rewriting Herta's formulation of LSTM, which actually puts in the ``cell'' memory into some of the input, forget gates, that's different from a ``traditional'' LSTM (see Wikipedia),
+\begin{equation}
+  \begin{aligned}
+    \text{ input gates } & i_t = \psi_{(i)}(\Theta^{(i)}X_t + b^{(i)} + \theta^{(i)}h_{t-1} + W^{(i)}c_{t-1}) \\
+        & f_t = \psi_{(f)}  (\Theta^{(f)} X_t + b^{(f)} + \theta^{(f)} h_{t-1} + W^{(f)} c_{t-1} )  \\
+    & c_t := f_t \odot c_{t-1} + i_t \odot g_t \\
+  \text{ output gates }   & o_t = \psi_{(0)} ( \Theta^{(0)} X_t + b^{(0)} + \Theta^{(0)} g_{t-1} + W^{(0)} c_t)
+    \end{aligned}
+  \end{equation}
+and then finally, not predict yet (I was mistaken) but $h$ here denotes some other ``hidden'' variable,
+\begin{equation}
+  h_t = o_t\odot \psi_h(c_t)
+\end{equation}
+
+
+$o_t,c_t \in\mathbb{R}^H$, and so $W^{(i)}, W^{(f)}, W^{(0)} \in \text{Mat}_{\mathbb{R}}(H,s_2)$.
+
+\begin{equation}
+  \begin{aligned}
+& y_t = \psi_{(y)}(\Theta^{(y)}h_t + b^{(y)} ) \\
+& \Theta^{(y)}:\mathbb{R}^{s_L} \to \mathbb{R}^K
+\end{aligned}
+  \end{equation}
+
+\begin{equation}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.25em, column sep=9em, minimum width=2em]
+  {
+ (\mathbb{R}^d \times \mathbb{R}^H)^m \times (\mathbb{R}^H) & (\mathbb{R}^H \times \mathbb{R}^H \times \mathbb{R}^H)^m & (\mathbb{R}^H \times \mathbb{R}^H)^m & (\mathbb{R}^H)^m \\
+X_t,h_{t-1},c_{t-1}  & (i_t,f_t,g_t) & c_t,o_t & h_t \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$\lbrace \psi_{\alpha}\circ ((\Theta^{(\alpha)},b^{(\alpha)}),\theta^{(\alpha)},W^{(\alpha)} ) \rbrace_{\alpha=i,f,g}$} (m-1-2)
+  (m-1-2) edge node [above] {$$} (m-1-3)
+    (m-1-3) edge node [above] {$$} (m-1-4) 
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  (m-2-2) edge node [above] {$$} (m-2-3)
+  (m-2-3) edge node [above] {$$} (m-2-4)
+  ;
+\end{tikzpicture}
+  \end{equation}
+
+Consider what we're essentially doing at time step $t$:
+\begin{equation}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.25em, column sep=11em, minimum width=2em]
+  {
+ ((\mathbb{R}^d \times \mathbb{R}^H) \times (\mathbb{R}^H))^m & (\mathbb{R}^H \times \mathbb{R}^H)^m & (\mathbb{R}^H \times \mathbb{R}^H \times \mathbb{R}^H )^m   \\
+X_t,h_{t-1},c_{t-1}  & c_t,h_t & c_t, h_t,y_t \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$\lbrace \psi_{\alpha}\circ ((\Theta^{(\alpha)},b^{(\alpha)}),\theta^{(\alpha)},W^{(\alpha)} ) \rbrace_{\alpha=i,f,g}$} (m-1-2)
+  (m-1-2) edge node [above] {$ (\cdot, \cdot, (\Theta^{(y)},b^{(y)})$} (m-1-3)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  (m-2-2) edge node [above] {$$} (m-2-3)
+  ;
+\end{tikzpicture}
+  \end{equation}
+
+The recurrence relation is essentially this:
+\begin{equation}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=2.25em, column sep=6em, minimum width=2em]
+  {
+X(t),h(t-1),c(t-1) & c(t),h(t),y(t) \qquad \, \forall \, t = 0,1,\dots T-1 \\ 
+  };
+%  \path[->]
+%  (m-1-1) edge node [above] {$\lbrace \psi_{\alpha}\circ ((\Theta^{(\alpha)},b^{(\alpha)}),\theta^{(\alpha)},W^{(\alpha)} ) \rbrace_{\alpha=i,f,g}$} (m-1-2)
+%  ;
+  \path[|->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+  ;
+\end{tikzpicture}
+  \end{equation}
+This is the recurrence relation that changes with time $t$ and in the language of \verb|theano|, for \verb|theano.scan| it is the argument value for argument  \verb|sequences|.  
+
+Notice how $h,c$ change over time.  These are the sequences we want to take in as input and output.  $X(t)$ is the sequences we want to ``iterate over.''  $X(t)$ doesn't get modified by our operations over time $t$ (than what is given).  $y(t)$ is an output we desire.  So in the language of \verb|theano|, for \verb|theano.scan|, $X(t)$ goes to the argument value for argument \verb|sequences|, as it's part of the ``list of Theano variables or dictionaries describing the sequences \verb|scan| has to iterate over'' and since $X=X(t)$ for time $t$, the ``\verb|taps|'' is \verb|[0]|.  $h,c,y$ is expected to be the return value of the Python function describing a single time step, and ``the order of the outputs is the same as the order of \verb|outputs_info|.  
+
+Look at the parameters:
+\begin{equation}
+\begin{aligned}
+  & (\Theta^{(g)},b^{(g)}), \theta^{(g)} \in (\text{Mat}_{\mathbb{R}}(d,H) \times \mathbb{R}^H \times \text{Mat}_{\mathbb{R}}(H,H) \\ 
+  & (\Theta^{(\alpha)},b^{(\alpha)}), \theta^{(\alpha)}, W^{(\alpha)} \in (\text{Mat}_{\mathbb{R}}(d,H) \times \mathbb{R}^H \times \text{Mat}_{\mathbb{R}}(H,H) \times \text{Mat}_{\mathbb{R}}(H,H) \\
+   & (\Theta^{(y)},b^{(y)})  \in (\text{Mat}_{\mathbb{R}}(H,K) 
+  \end{aligned}
+  \end{equation}
+These parameters are what you put into, in the language of \verb|theano|, for the argument value of \verb|non_sequences| of \verb|theano.scan|.  
+
+\subsection{How to choose the number of hidden layers and nodes in a neural net}
+
+
+
+\part{Support Vector Machines (SVM)}
+
+The clearest and most mathematically rigorous (and satisfying) introductory exposition on support vector machines (SVM) comes out of a Bachelor's thesis from Nowak (2008) \cite{Nowa2008}.  There is a lot of material that tries to talk about SVM, but the implementation either boils down to showing how to turn the crank on a black-box solution, or is too verbose without saying anything substantial.  I'll include references and links of the material I looked at and didn't find as helpful as Nowak (2008) \cite{Nowa2008}.  
+
+\href{https://d18ky98rnyall9.cloudfront.net/_246c2a4e4c249f94c895f607ea1e6407_Lecture12.pdf?Expires=1490227200&Signature=VxrCShNSKNcYN9~2eHC~IQoQv11wIyqVGEMWVtaycFoimayg-XnGkJaBR4s~aIGf3nq~ck-W5ow4WM0-3vLuxfSkmhQflZH4Bx5fVo2w3R~bldnsJc91Bq-w27KZTw-Xanct~Cn7RnT0ViPlGYeUBmmrSoXAer5IZyPVdmbChzY_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A}{Lecture12 pdf slides for Ng's Machine Learning Intro. for coursera}
+
+\href{http://www.cs.columbia.edu/~kathy/cs4701/documents/jason_svm_tutorial.pdf}{Support Vector Machine
+(and Statistical Learning Theory) Tutorial by Jason Weston, NEC Labs America}
+
+\href{https://en.wikipedia.org/wiki/Support_vector_machine}{Wikipedia page for Support Vector Machine}
+
+\href{https://arxiv.org/pdf/1610.09932.pdf}{Support Vector Machines and Generalisation in HEP} Not much real generalization going on here other than a recap of literally what's exactly in Shawe-Taylor and Cristianini (2000) \cite{STCr2000}.  
+
+\url{https://www.cs.cornell.edu/people/tj/publications/joachims_99a.pdf}
+
+\section{From linear classifier as a hyperplane, (big) margin, to linear support vector machine (SVM), and Lagrangian dual (i.e. conjugate variables, conjugate momenta)}
+
+Intuitively, we seek to find a boundary line that'll draw a line that separates the data points into distinct $K$ (usually $K=2$) classes to classify the data points.  Then, this boundary line will help to predict what class a new data point would fall into, be classified to be.  For a linear model, i.e. ``linear discriminator'', what we're trying to do is \\
+
+find
+\[
+\theta \in \mathbb{R}^d \backslash \lbrace 0 \rbrace ,\, b\in \mathbb{R}
+\]
+s.t.
+\begin{equation}
+  y^{(i)}(\langle \theta,x^{(i)} \rangle + b) - 1 \geq 0 \qquad\, \forall \, i = 1, \dots, m 
+\end{equation}
+where $\| \theta \|$ is minimal.  It is minimal because, since the distance between 2 hyperplanes,
+\[
+\langle \theta, x\rangle - b = \pm 1 \qquad \, (\text{defining equations for hyperplanes})
+\]
+is
+\[
+\frac{2}{\|\theta\|} \qquad \, (\text{distance between 2 hyperplanes})
+\]
+Thus, we want the ``margins'', that distance between hyperplanes separating the input data points, to be as big as possible, and so we want $\|\theta\|$ small.
+
+Consider this cost functional, called ``Lagrangian'', that we want to minimize:
+\begin{equation}\label{Eq:costLagrangian}
+  \mathcal{L}((\theta,b),\lambda) = \frac{1}{2} \| \theta\|^2 - \sum_{j=1}^m \lambda_i y^{(i)}(\langle \theta, x^{(i)} \rangle - b - 1)   =  \frac{1}{2} \| \theta\|^2 - \sum_{j=1}^m \lambda_i y^{(i)}(\langle \theta, x^{(i)} \rangle - b) +\sum_{i=1}^m \lambda_i 
+  \end{equation}
+Note that
+\begin{equation}
+f_0((\theta,b)) := \frac{1}{2} \| \theta \|^2 (\text{objective function (slightly modified)})
+\end{equation}
+is the objective function, what we want to minimize.
+
+The KKT condition tells us that $(\theta,b)$ makes $\mathcal{L}$ a minimum for a certain $\lambda$:
+\begin{equation}\label{Eq:partialsL}
+  \begin{aligned}
+    & \frac{ \partial \mathcal{L}}{ \partial \theta_j} = 0 = \theta_j - \sum_{i=1}^m \lambda_i y^{(i)} x_j^{(i)} \\ 
+    & \frac{ \partial \mathcal{L}}{ \partial b} = 0 = -\sum_{i=1}^m \lambda_i y^{(i)}
+    \end{aligned}
+  \end{equation}
+Note that this step in taking the partial derivatives of $\mathcal{L}$ in Eq. \ref{Eq:partialsL} is analogous to the construction/computation of dual ``conjugate'' variables, conjugate momentum, in physics.  
+
+Notice then that
+\begin{equation}
+  \begin{gathered} \frac{1}{2} \| \theta \|^2 = \frac{1}{2} \sum_{i,j=1}^m \lambda_i \lambda_j y^{(i)} y^{(j)} \langle x^{(i)}, x^{(j)} \rangle \text{ and } \\
+    \sum_{i=1}^m \lambda_i y^{(i)} (\langle \theta, x^{(i)} \rangle -b ) =\sum_{i=1}^m \lambda_i y^{(i)} (\sum_{j=1}^m \lambda_j y^{(j)} \langle x^{(j)}, x^{(i)} \rangle )
+    \end{gathered}
+  \end{equation}
+\begin{equation}
+\Longrightarrow \mathcal{L}((\theta,b),\lambda) = -\frac{1}{2} \sum_{i,j=1}^m \lambda_i \lambda_j y^{(i)} y^{(j)} \langle x^{(i)} , x^{(j)} \rangle + \sum_{i=1}^m \lambda_i
+\end{equation}
+
+\section{So-called ``Kernel trick''; feature space is a Hilbert space}
+
+The so-called ``feature space'' $F$ is a Hilbert space $H$, $\Phi:\mathbb{R}^d \to H$, equipped with inner product
+\begin{equation}
+\langle \Phi(x), \Phi(y) \rangle = K(x,y)
+  \end{equation}
+with $K: \mathbb{K}^d\times \mathbb{K}^d \to \mathbb{K}^K$ being called the kernel function.  Recall that the feature space $F$ had been introduced to represent the process of preprocessing input data $X$.  For example, given a single input data example, $X=(X_1,\dots, X_d)\in \mathbb{R}^d$, maybe we'd want to consider polynomial features, linear combinations of various orders of monomials $X_iX_j$ or $X_i^2 X_j$, and so on.  Then $\Phi$ represents the map from $X$ to all these features.
+
+The essense of the kernel trick is this: the explicit form of $\Phi$ need not be known, nor even the space $H$.  Only the kernal function $K$ form needs to be guessed at.  
+
+And so even if we now have to modify our Eq. \ref{Eq:costLagrangian} to account for this preprocessing map $\Phi$, applied first to our training data $x^{(i)} \equiv X^{(i)}$ (Novak's notation vs. Andrew Ng's notation), we essentially still have the same form, formally.
+
+Keep in mind the whole point of this nonlinear preprocessing map $\Phi$ - we want to keep the linear discrimination procedure with the weight, or parameter $\theta$, and intercept $b$, being this linear model on the feature space (Hilbert space) $F$.  We're linear in $F$.  But we're nonlinear in the input data $X=\lbrace X^{(1)},\dots X^{(m)}\rbrace$.
+
+So,
+\begin{equation}
+  \begin{gathered}
+    \mathcal{L}((\theta,b),\lambda) = \frac{1}{2} \| \theta\|^2 - \sum_{j=1}^m \lambda_i y^{(i)}(\langle \theta, \Phi(x^{(i)}) \rangle - b - 1)   =  \frac{1}{2} \| \theta\|^2 - \sum_{j=1}^m \lambda_i y^{(i)}(\langle \theta, x^{(i)} \rangle - b) +\sum_{i=1}^m \lambda_i \text{ and so } \\
+    \frac{ \partial \mathcal{L}}{ \partial \theta_j} = 0 = \theta_j - \sum_{i=1}^m \lambda_i y^{(i)} \Phi(x)^{(i)}_j \\
+    \Longrightarrow \mathcal{L}((\theta,b),\lambda) = -\frac{1}{2} \sum_{i,j=1}^m \lambda_i \lambda_j y^{(i)} y^{(j)} \langle \Phi(x^{(i)}) , \Phi(x^{(j)}) \rangle + \sum_{i=1}^m \lambda_i
+    \end{gathered}
+  \end{equation}
+
+\subsection{Dealing with Errors, (non-negative) slack variables, dealing with not-necessarily perfectly separable data}
+
+First, loosen the strict constraint $y^{(i)}(\langle \theta,x^{(i)} \rangle - b) \geq 1$ by introducing \emph{non-negative} slack variables $\xi_i$, $i=1\dots m$,
+\begin{equation}
+  y^{(i)}(\langle \theta, x^{(i)} \rangle - b) \geq 1 - \xi_i, \qquad \, \forall \, i = 1,2, \dots m 
+\end{equation}
+Simply add $\xi$ to the objective function to implement penalty (for ``too much slack''):
+\begin{equation}
+  f_0(\theta,b,\mathbf{\xi}) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i
+  \end{equation}
+
+
+
+So then the total Lagrangian becomes
+\begin{equation}
+  \mathcal{L}(\theta,b,\xi,\lambda,\mu) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i - \sum_{i=1}^m \lambda_i (y^{(i)}(\langle \theta,x^{(i)} \rangle -b)-1 +\xi_i ) - \sum_{i=1}^m \mu_i \xi_i
+\end{equation}
+where the constraint is turned into a Lagrange-multiplier type relation:
+\begin{equation}
+\xi_i \geq 0 \Longrightarrow \mu_i(\xi_i - 0) \qquad \, \forall \, i =1,\dots m 
+\end{equation}
+$-\mu_i\xi_i$ is indeed a valid cost (penalty) functional (if $\xi_i  <0$, $-\mu_i\xi_i >0$, and there's more penalty as $\xi_i$ gets more negative.  Note that I understood this cost or penalty accounting, given an \emph{inequality constraint}, from reading notes from here, \href{http://www.pitt.edu/~jrclass/opt/notes4.pdf}.   
+
+
+
+
+
+
+
+
+\section{Dual Formulation}
+
+\begin{equation}\label{Eq:DualFormulation}
+\begin{gathered}
+  \text{min}. \qquad \, W(\lambda) = -\sum_{i=1}^m \lambda_i +\frac{1}{2} \sum_{i,j=1}^m \lambda_i \lambda_j y^{(i)} y^{(j)} K(x^{(i)},x^{(j)}) \\
+  \text{ s.t. } \begin{aligned} & \quad \\
+    & \sum_{i=1}^m \lambda_i y^{(i)} = 0  \\
+    & 0 \leq \lambda_i \leq C \end{aligned}
+  \end{gathered}
+  \end{equation}
+
+At this point, Eq. \ref{Eq:DualFormulation} is what I could consider the ``theoretical gold'' version.  Further modification of this formulation are really to efficiently implement this on the computer (or microprocessor!).  But the schemes should respect this ``gold'' version and compute what this is and say.  
+
+\subsection{Implementation}
+
+Wotao Yin's notes had a terse, but to-the-point, survey/summary of optimization, in particular nonlinear optimization with inequality constraints, for his courses \href{http://www.math.ucla.edu/~wotaoyin/math273a/slides/Lec6_NLP_w_inequality_constraints_273a_2015_f.pdf}{273a} and \href{http://www.math.ucla.edu/~wotaoyin/math164/slides/wotao_yin_optimization_lec13_algorithms_for_constrained_optimization.pdf}{Math 164, Algorithms for constrained optimization}.  In both course notes, the material is ``taken from the textbook Chong-Zak, 4th. Ed.''  So we'll refer to Chong and Zak (2013) \cite{ChZa2013}.   
+
+From Ch. 22 ``Algorithms for Constrained Optimization'', 2nd. Ed., from pp. 439, Sec. 22.2 Projections, consider $\Omega \subset \mathbb{R}^d$, \[
+\Omega = \lbrace \mathbf{x} | l_i \leq x_i \leq u_i , \, i = 1\dots d\rbrace
+\]
+
+Let $\Pi \equiv $ projection operator.  Define the above case as such:
+
+\[
+\begin{gathered}
+  \forall \, \mathbf{x} \in \mathbb{R}^d, \, y := \Pi[x] \in \mathbb{R}^d \\ 
+  y_i \equiv \begin{cases} u_i & \text{ if } x_i > u_i \\
+    x_i & \text{ if } l_i \leq x_i \leq u_i \\
+    l_i & \text{ if } x_i < l_i \end{cases}
+  \end{gathered}
+\]
+
+
+
+
+
+
+
+\subsubsection{Projected Gradient descent}.
+
+Implement $\sum_{i=0}^m \lambda_i y^{(i)} = 0$, consider the orthogonal projector matrix (operator)
+\begin{equation}
+  \mathbf{P} := \mathbf{1}_{\mathbb{R}^d} - A^T(AA^T)^{-1}A
+  \end{equation}
+
+
+
+
+
+If $m=1$, then
+\[
+\text{Proj}_{\Omega}(\mathbf{y}) = \mathbf{y} - \frac{\mathbf{a}_1^T \mathbf{y} - b}{ \| \mathbf{a}_1 \|^2 } \mathbf{a}_1
+\]
+
+If $m>1$, then
+\[
+\text{Proj}_{\Omega}(\mathbf{y}) = (1_{\mathbb{R}^d} - A^T(AA^T)^{-1}A)\mathbf{y}+A^T(AA^T)^{-1}\mathbf{b}
+\]
+
+For the linear (but it's an equality) constraint
+\[
+\sum_{i=1}^m \lambda_iy^{(i)} = 0 
+\]
+so
+\begin{equation}
+  \mathbf{P}_{\sum_{i=1}^m\lambda_iy^{(i)} = 0 }(\mathbf{y}) = \left( \mathbf{y} - \frac{ \sum_{i=1}^m y^{(i)} (\mathbf{y})_i }{ \sum_{i=1}^m (y^{(i)})^2 } (y^{(i)})\mathbf{e}_i \right)
+  \end{equation}
+
+
+\href{http://drona.csa.iisc.ernet.in/~e0270/Jan-2015/Tutorials/lecture-notes-3.pdf}{Narasimhan's Optimization Tutorial 3, Projected Gradient Descent, Duality} had some concrete pseudocode for the projected gradient descent \cite{Nara2015}.
+
+In summary,
+\begin{equation}
+\begin{gathered}
+  \begin{gathered}
+    \text{ we seek to minimize } \\
+    W(\lambda) = - \sum_{i=1}^m \lambda_i + \frac{1}{2} \sum_{i,j=1}^m \lambda_i \lambda_j y^{(i)} y^{(j)} K(X^{(i)},X^{(j)}) \qquad \, \forall \, i=1,2,\dots m 
+  \end{gathered} \\
+  \text{  by iterating $t=0,1,\dots $, as such: } \\
+  \begin{aligned}
+    & \lambda_i'(t+1):=\lambda_i(t) - \alpha \text{grad}{ W(\lambda) } \\ 
+    & \lambda''_i(t+1):= \mathbf{P}_{\sum_{i=1}^m \lambda_i y^{(i)} = 0 }( \lambda_i'(t+1)) \\ 
+    & \lambda_i(t+1) := \Pi_{0\leq \lambda_i \leq C}(\lambda_i''(t+1))
+    \end{aligned}
+\end{gathered}
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+& \mathbf{P}_{\sum_{i=1}^m \lambda_i y^{(i)} = 0 }( \lambda_i'(t+1)) = \lambda_i'(t+1) - \frac{ \sum_{i=1}^m y^{(i)}\lambda_i'(t+1) }{ \sum_{i=1}^m (y^{(i)})^2 } y^{(i)} \\ 
+  & \Pi_{0\leq \lambda_i \leq C}(\lambda_i''(t+1)) = \begin{cases} C & \text{ if } \lambda_i''(t+1) > C \\
+    \lambda_i''(t+1) & \text{ if } 0 \leq \lambda_i''(t+1) \leq C \\
+    0 & \text{ if } \lambda_i'(t+1) <0 \end{cases}
+\end{aligned}
+\end{equation}
+
+\subsubsection{Computing $b$, the intercept, with a good algebra tip: multiply both sides by the denominator}
+
+Bishop (2007) \cite{Bish2007}, on pp. 330 of Ch. 7, Sparse Kernel Machines,  gave a very good (it resolved possible numerical instabilities) prescription on how to compute the intercept $b$, given $\lambda$, which would then give us the function that can make predictions $\widehat{y}$ on input data example $X^{(i)} \in X$.  It's worth expounding upon here.  
+
+For any support vector (Bishop called it a support vector; what I think it's equivalent to is that we've trained on our training set $(X,y)^{\text{train}}$, and this is 1 of the training examples) $X^{(i)}$, $i=1\dots m$,
+\begin{equation}
+  y^{(i)}f(X^{(i)}) =1
+  \end{equation}.  Then using
+\begin{equation}
+\begin{gathered}
+  f(x):=\sum_{i=1}^m y^{(i)} \lambda_i^* K(X^{(i)},x) + b \\
+  \Longrightarrow y^{(i)} \left( \sum_{j=1}^m y^{(j)} \lambda_j^* K(X^{(j)},X^{(i)} ) + b \right) = 1
+  \end{gathered}
+  \end{equation}
+Although we can solve this equation for $b$ with algebra/arithmetic for our arbitrarily chosen support vector, it's numerically more stable to 1st. multiply through by $y^{(i)}$, using $(y^{(i)})^2 =1$, and then averaging over all support vectors.
+\begin{equation}
+  \begin{gathered}
+    \sum_{j=1}^m y^{(j)}\lambda_j^* K(X^{(j)},X^{(i)}) +b = y^{(i)} \\
+    \Longrightarrow b= \frac{1}{m} \left( \sum_{i=1}^m y^{(i)} - \sum_{i,j=1}^m y^{(j)} \lambda_j^* K(X^{(j)}, X^{(i)}) \right)
+    \end{gathered}
+  \end{equation}
+
+\subsubsection{Prediction (with SVM)}
+
+\begin{equation}
+  \begin{aligned}
+    & \widehat{y}(X) = \sum_{i=1}^m y^{(i)} \lambda_i^* K(X^{(i)}, X) + b^* \\ 
+    & \widehat{y}:\mathbb{R}^d \to \lbrace 0 ,1 , \dots , K-1 \rbrace
+    \end{aligned}
+  \end{equation}
+
+
+Clarke, Fokoue, and Zhang (2009) \cite{CFZ2009}
 
 
 \part{Notes}
@@ -1485,9 +2264,9 @@ Restricted Boltzmann machine - estimate a probability distribution
 Recurrent neural network - creates an internal state of the network which allows it to exhibit dynamic temporal behavior
 
 
+\href{http://stats.stackexchange.com/questions/181/how-to-choose-the-number-of-hidden-layers-and-nodes-in-a-feedforward-neural-netw}{How to choose the number of hidden layers and nodes in a feedforward neural network?}
 
-
-
+``In sum, for most problems, one could probably get decent performance (even without a second optimization step) by setting the hidden layer configuration using just two rules: (i) number of hidden layers equals one; and (ii) the number of neurons in that layer is the mean of the neurons in the input and output layers.''
 
 
 
@@ -1515,6 +2294,41 @@ Richard Fitzpatrick.  ``Computational Physics.''  \url{http://farside.ph.utexas.
 
 \bibitem{LISA2015}
 LISA lab, University of Montreal.  Deep Learning Tutorial.  \url{http://deeplearning.net/tutorial/deeplearning.pdf}  September 2015.  
+
+
+
+\bibitem{Horn1991}
+Kurt Hornik. ``Approximation Capabilities of Muitilayer Feedforward Networks.''  \textbf{Neural Networks}, Vol. 4, pp. 251-257. 1991
+
+\bibitem{HSW1989}
+Kurt Hornik. Maxwell Stinchcombe and Halbert White.  ``Multilayer Feedforward Networks are Universal Approximators.''  \textbf{Neural Networks}, Vol. 2, pp. 359-366, 1989.  
+
+\bibitem{Nowa2008}
+Thomas Nowak.  ``Implementation and Evaluation of a Support Vector Machine on an 8-bit Microcontroller.''  Univ.Ass. Dipl.-Ing. Dr.techn. Wilfried Elmenreich Institut f\"{u}r Technische Informatik Fakult\"{a}t f\"{u}r Informatik Technische Universit\"{a}t Wien.  Juli 2008.  \url{https://www.lri.fr/~nowak/misc/bakk.pdf}
+
+
+
+\bibitem{STCr2000}
+J.  Shawe-Taylor  and  N.  Cristianini,  Support  Vector  Machines  and  other  kernel-based  learning  methods,
+Cambridge University Press (2000).
+
+
+
+\bibitem{ChZa2013}
+Edwin K. P. Chong and Stanislaw H. Zak.  \textbf{An Introduction to Optimization}.  4th Edition.  Wiley.  (January 14, 2013).  ISBN-13: 978-1118279014
+  
+\bibitem{Nara2015}
+Lecture by Harikrishna Narasimhan.  \emph{Optimization Tutorial 3: Projected Gradient Descent, Duality}.  \textbf{E0 270 Machine Learning}.  Jan 23, 2015.  \url{http://drona.csa.iisc.ernet.in/~e0270/Jan-2015/Tutorials/lecture-notes-3.pdf}
+
+\bibitem{Bish2007}
+Christopher M. Bishop.  \textbf{Pattern Recognition and Machine Learning} (Information Science and Statistics).  Springer (October 1, 2007).  ISBN-13: 978-0387310732
+
+
+\bibitem{CFZ2009}
+Bertrand Clarke, Ernest Fokoue, Hao Helen Zhang.   \textbf{Principles and Theory for Data Mining and Machine Learning} (Springer Series in Statistics)  Springer; 2009 edition (July 30, 2009).  ISBN-13: 978-0387981345
+ 
+
+
 
 
 \end{thebibliography}
