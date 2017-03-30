@@ -314,7 +314,7 @@ First, ``loosen the strict constraint'' $y^{(i)}(\langle \theta,x^{(i)} \rangle 
 \end{equation}
 Simply add $\xi$ to the objective function to implement penalty (for ``too much slack''), with a ``regularization'' constant $C$ (in analogy to regularization in the linear regression or logistic regression classifier methods):
 \begin{equation}
-  f_0(\theta,b,\mathbf{\xi}) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i
+  f_0(\theta,b,\xi) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i
   \end{equation}
 
 So then the total Lagrangian becomes
