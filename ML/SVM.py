@@ -705,11 +705,57 @@ class SVM_parallel(object):
 								sequences=[X_pred], non_sequences=[X,y,lambda_mult,b])
 		output = sandbox.cuda.basic_ops.gpu_from_host(output)
 		
+		
 		predictions_function = theano.function(inputs=[],outputs=output)
 		predictions_vals = predictions_function()
-		return predictions_vals, predictions_function
-		
+		self._yhat = theano.shared( predictions_vals ) # added this line later
 
+
+		return predictions_vals, predictions_function  # originally
+#		return predictions_vals, predictions_function,output
+		
+		
+	# cf. http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf
+	# Platt Calibration	
+	def make_prob_Pratt(self,y,alpha=0.01,training_steps=10000):
+		""" make_prob - make probabilities, according to Pratt scaling 
+		@type y : numpy array of length m, of binary values 0,1 
+		@param y : actual class the example is in
+
+		@type alpha : float
+		@param alpha : "learning rate" for gradient descent
+
+		WARNING: make sure this inputted y is in 0,1 representation, NOT -1,1 representation of which (binary) class it's in 
+
+		returns the actual values as a (numerical) array and theano expression (graph)
+		"""
+		alpha = np.float32(alpha)
+		y_sh = theano.shared( y.astype(theano.config.floatX ) )
+		
+#		predicted_vals,predicting_function,output_graph = self.make_predictions_parallel( X_pred_vals)
+		yhat = self._yhat 
+		A = theano.shared( np.float32( np.random.rand() ) )
+		B = theano.shared( np.float32( np.random.rand() ) )
+		Prob_1_given_yhat = np.float32(1.)/(np.float32(1.)+ T.exp(A*yhat +B)) # P(y=1|f) = 1/(1+exp(Af+B)), should be length (size or dimension) of m 
+		
+		costfunctional = T.nnet.binary_crossentropy( Prob_1_given_yhat, y_sh).mean()
+		
+		DA, DB = T.grad(costfunctional, [A,B])  # the gradient of costfunctional, with respect to A,B, respectively
+
+		updateA = sandbox.cuda.basic_ops.gpu_from_host(A-alpha*DA)
+		updateB = sandbox.cuda.basic_ops.gpu_from_host(B-alpha*DB)
+
+		train = theano.function(inputs=[],outputs=[Prob_1_given_yhat, costfunctional],
+#								updates=[(A,updateA),(B,B-alpha*DB)],name="train")  # on the CPU
+								updates=[(A,updateA),(B,updateB)],name="train")  # on the GPU
+
+		probabilities = theano.function(inputs=[], outputs=Prob_1_given_yhat,name="probabilities")
+		
+		for i in range(training_steps):
+			pred,err = train()
+		
+		probabilities_vals = probabilities()
+		return probabilities_vals, Prob_1_given_yhat
 		
 		
 def build_gradDescent_step( W, lambda_mult, alpha =0.01, beta= 0.0):
