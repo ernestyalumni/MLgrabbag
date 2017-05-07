@@ -12,6 +12,7 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
   * `sampleinputdataX_sklearn` - collection of sample data from `sklearn`
 - * `theano_ML.ipynb` - Coursera's *Introduction to Machine Learning*, taught by Ng, but with the syntax translated into *`theano`*, and to *run on the **GPU** *.
     * Notably, [Week 1 Linear Algebra Review of Coursera's Machine Learning Introduction, taught by Ng](https://www.coursera.org/learn/machine-learning/supplement/xRMqw/lecture-slides) is translated into `theano` on the *GPU*
+- Dealing with *`cuDNN`*, straight from the source
 
 ## Notes on `theano`
 
@@ -470,6 +471,49 @@ Mon Oct 31 15:28:30 2016
 |    0     24621    G   /usr/libexec/Xorg                                6MiB |
 +-----------------------------------------------------------------------------+
 ```
+
+# Dealing with `cuDNN`, straight from the source
+
+On Ubuntu 16.04 LTS,
+check your installation of `cudnn` (installed from *standard repositories* via *apt-get*):    
+cf. [How can I install CuDNN on Ubuntu 16.04?](https://askubuntu.com/questions/767269/how-can-i-install-cudnn-on-ubuntu-16-04)
+
+You want to check your CUDA installation.  The installation from the repository is in either
+`/usr/lib/...` and/or    
+`/usr/include`    
+
+Otherwise, it'll be in `/usr/local/cuda`.  Check with `which nvcc` or `ldconfig -p | grep cuda`
+
+Then, either copy these files manually from the CUDNN download (from the developers' website) or simply check they're already there:
+
+```
+cd folder/extracted/contents
+sudo cp -P include/cudnn.h /usr/include
+sudo cp -P lib64/libcudnn* /usr/lib/x86_64-linux-gnu/
+sudo chmod a+r /usr/lib/x86_64-linux-gnu/libcudnn*
+```
+
+## Compiling in `nvcc` files using `cuDNN`:   
+ 
+With `cudnn.h` in `/usr/include` (very convenient and *should* have been done by the installation via standard repositories, i.e. `apt-get`), do this in your code:
+```
+#include <cudnn.h>
+```
+and compile including the
+```
+-lcudnn
+```
+flag which means, include this library "l", and include library "cudnn".
+
+For example,
+```
+nvcc -arch='sm_61' -lcudnn DNN_playground_unified.cu -o DNN_playground_unified.exe
+```
+
+Some miscellaneous references for finding examples of "raw" usages of `cuDNN`:
+http://images.nvidia.com/content/gtc-kr/part_2_vuno.pdf
+
+
 
 
 # Installation of `tensorflow`, `tensorflow-gpu` 
