@@ -568,6 +568,355 @@ pip freeze
     
 pip show [options] <package>    
     
-```   
+```
+
+# Natural Language Processing
+
+https://github.com/davidadamojr/TextRank/blob/master/textrank/__init__.py
+
+"""Python implementation of the TextRank algoritm.
+From this paper:
+    https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf
+Based on:
+    https://gist.github.com/voidfiles/1646117
+    https://github.com/davidadamojr/TextRank
+"""
+import io
+import itertools
+import networkx as nx
+import nltk
+import os
+
+
+def setup_environment():
+    """Download required resources."""
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
+    print('Completed resource downloads.')
+
+
+def filter_for_tags(tagged, tags=['NN', 'JJ', 'NNP']):
+    """Apply syntactic filters based on POS tags."""
+    return [item for item in tagged if item[1] in tags]
+
+
+def normalize(tagged):
+    """Return a list of tuples with the first item's periods removed."""
+    return [(item[0].replace('.', ''), item[1]) for item in tagged]
+
+
+def unique_everseen(iterable, key=None):
+    """List unique elements in order of appearance.
+    Examples:
+        unique_everseen('AAAABBBCCDAABBB') --> A B C D
+        unique_everseen('ABBCcAD', str.lower) --> A B C D
+    """
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in [x for x in iterable if x not in seen]:
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
+
+
+def levenshtein_distance(first, second):
+    """Return the Levenshtein distance between two strings.
+    Based on:
+        http://rosettacode.org/wiki/Levenshtein_distance#Python
+    """
+    if len(first) > len(second):
+        first, second = second, first
+    distances = range(len(first) + 1)
+    for index2, char2 in enumerate(second):
+        new_distances = [index2 + 1]
+        for index1, char1 in enumerate(first):
+            if char1 == char2:
+                new_distances.append(distances[index1])
+            else:
+                new_distances.append(1 + min((distances[index1],
+                                             distances[index1 + 1],
+                                             new_distances[-1])))
+        distances = new_distances
+    return distances[-1]
+
+
+def build_graph(nodes):
+    """Return a networkx graph instance.
+    :param nodes: List of hashables that represent the nodes of a graph.
+    """
+    gr = nx.Graph()  # initialize an undirected graph
+    gr.add_nodes_from(nodes)
+    nodePairs = list(itertools.combinations(nodes, 2))
+
+    # add edges to the graph (weighted by Levenshtein distance)
+    for pair in nodePairs:
+        firstString = pair[0]
+        secondString = pair[1]
+        levDistance = levenshtein_distance(firstString, secondString)
+        gr.add_edge(firstString, secondString, weight=levDistance)
+
+    return gr
+
+
+def extract_key_phrases(text):
+    """Return a set of key phrases.
+    :param text: A string.
+    """
+    # tokenize the text using nltk
+    word_tokens = nltk.word_tokenize(text)
+
+    # assign POS tags to the words in the text
+    tagged = nltk.pos_tag(word_tokens)
+    textlist = [x[0] for x in tagged]
+
+    tagged = filter_for_tags(tagged)
+    tagged = normalize(tagged)
+
+    unique_word_set = unique_everseen([x[0] for x in tagged])
+    word_set_list = list(unique_word_set)
+
+    # this will be used to determine adjacent words in order to construct
+    # keyphrases with two words
+
+    graph = build_graph(word_set_list)
+
+    # pageRank - initial value of 1.0, error tolerance of 0,0001,
+    calculated_page_rank = nx.pagerank(graph, weight='weight')
+
+    # most important words in ascending order of importance
+    keyphrases = sorted(calculated_page_rank, key=calculated_page_rank.get,
+                        reverse=True)
+
+    # the number of keyphrases returned will be relative to the size of the
+    # text (a third of the number of vertices)
+    one_third = len(word_set_list) // 3
+    keyphrases = keyphrases[0:one_third + 1]
+
+    # take keyphrases with multiple words into consideration as done in the
+    # paper - if two words are adjacent in the text and are selected as
+    # keywords, join them together
+    modified_key_phrases = set([])
+    # keeps track of individual keywords that have been joined to form a
+    # keyphrase
+    dealt_with = set([])
+    i = 0
+    j = 1
+    while j < len(textlist):
+        first = textlist[i]
+        second = textlist[j]
+        if first in keyphrases and second in keyphrases:
+            keyphrase = first + ' ' + second
+            modified_key_phrases.add(keyphrase)
+            dealt_with.add(first)
+            dealt_with.add(second)
+        else:
+            if first in keyphrases and first not in dealt_with:
+                modified_key_phrases.add(first)
+
+            # if this is the last word in the text, and it is a keyword, it
+            # definitely has no chance of being a keyphrase at this point
+            if j == len(textlist) - 1 and second in keyphrases and \
+                    second not in dealt_with:
+                modified_key_phrases.add(second)
+
+        i = i + 1
+        j = j + 1
+
+    return modified_key_phrases
+
+
+def extract_sentences(text):
+    """Return a paragraph formatted summary of the source text.
+    :param text: A string.
+    """
+    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    sentence_tokens = sent_detector.tokenize(text.strip())
+    graph = build_graph(sentence_tokens)
+
+    calculated_page_rank = nx.pagerank(graph, weight='weight')
+
+    # most important sentences in ascending order of importance
+    sentences = sorted(calculated_page_rank, key=calculated_page_rank.get,
+                       reverse=True)
+
+    # return a 100 word summary
+    summary = ' '.join(sentences)
+    summary_words = summary.split()
+    summary_words = summary_words[0:101]
+    summary = ' '.join(summary_words)
+
+    return summary
+
+
+def write_files(summary, key_phrases, filename):
+    """Write key phrases and summaries to a file."""
+    print("Generating output to " + 'keywords/' + filename)
+    key_phrase_file = io.open('keywords/' + filename, 'w')
+    for key_phrase in key_phrases:
+        key_phrase_file.write(key_phrase + '\n')
+    key_phrase_file.close()
+
+    print("Generating output to " + 'summaries/' + filename)
+    summary_file = io.open('summaries/' + filename, 'w')
+    summary_file.write(summary)
+    summary_file.close()
+
+    print("-")
+
+
+def summarize_all():
+    # retrieve each of the articles
+    articles = os.listdir("articles")
+    for article in articles:
+        print('Reading articles/' + article)
+        article_file = io.open('articles/' + article, 'r')
+        text = article_file.read()
+        keyphrases = extract_key_phrases(text)
+        summary = extract_sentences(text)
+write_files(summary, keyphrases, article)
+
+https://github.com/davidadamojr/TextRank/blob/master/main.py
+
+import click
+import textrank
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def initialize():
+    """Download required nltk libraries."""
+    textrank.setup_environment()
+
+
+@cli.command()
+@click.argument('filename')
+def extract_summary(filename):
+    """Print summary text to stdout."""
+    with open(filename) as f:
+        summary = textrank.extract_sentences(f.read())
+        print(summary)
+
+
+@cli.command()
+@click.argument('filename')
+def extract_phrases(filename):
+    """Print key-phrases to stdout."""
+    with open(filename) as f:
+        phrases = textrank.extract_key_phrases(f.read())
+print(phrases)
+   
+
+https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf
+
+https://stackoverflow.com/questions/25315566/unicodedecodeerror-in-nltks-word-tokenize-despite-i-forced-the-encoding
+	
+
+I first convert a pdf into plain text (I print it out and everything is fine) and then I get a UnicodeDecodeError when I try to run word_tokenize() from NLTK.
+
+I get that error despite I try to decode('utf-8').encode('utf-8') on the plain text, beforehand. In the traceback I noticed that the line of code from word_tokenize() that raises the error first is plaintext.split('\n'). This is why I tried to reproduce the error by running split('\n') on the plain text but still, that doesn't rise any error either.
+
+So, I understand neither what is causing the error nor how to avoid it.
+
+Any help would be greatly appreciate it! :) maybe I could avoid it by changing something in the pdf_to_txt file?
+
+Here's the code to tokenize:
+
+from cStringIO import StringIO
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import os
+import string
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfpage import PDFPage
+
+stopset = stopwords.words('english')
+path = 'my_folder'
+listing = os.listdir(path)
+for infile in listing:
+        text = self.convert_pdf_to_txt(path+infile)
+        text = text.decode('utf-8').encode('utf-8').lower()
+        print text
+        splitted = text.split('\n')
+        filtered_tokens = [i for i in word_tokenize(text) if i not in stopset and i not in string.punctuation]
+
+Here's the method I call in order to convert from pdf to txt:
+
+def convert_pdf_to_txt(self, path):
+    rsrcmgr = PDFResourceManager()
+    retstr = StringIO()
+    codec = 'utf-8'
+    laparams = LAParams()
+    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+    fp = file(path, 'rb')
+    interpreter = PDFPageInterpreter(rsrcmgr, device)
+    password = ""
+    maxpages = 0
+    caching = True
+    pagenos=set()
+    for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+        interpreter.process_page(page)
+    fp.close()
+    device.close()
+    ret = retstr.getvalue()
+    retstr.close()
+    return ret
+
+Here's the traceback of the error I get:
+
+    Traceback (most recent call last):
+  File "/home/iammyr/opt/workspace/task-logger/task_logger/nlp/pre_processing.py", line 65, in <module>
+    obj.tokenizeStopWords()
+  File "/home/iammyr/opt/workspace/task-logger/task_logger/nlp/pre_processing.py", line 29, in tokenizeStopWords
+    filtered_tokens = [i for i in word_tokenize(text) if i not in stopset and i not in string.punctuation]
+  File "/usr/local/lib/python2.7/dist-packages/nltk/tokenize/__init__.py", line 93, in word_tokenize
+    return [token for sent in sent_tokenize(text)
+  [...]
+  File "/usr/local/lib/python2.7/dist-packages/nltk/tokenize/punkt.py", line 586, in _tokenize_words
+    for line in plaintext.split('\n'):
+UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 9: ordinal not in range(128)
+
+Thanks a million and loads of good karma to you! ;)
+python-2.7 encoding utf-8 nltk pdfminer
+shareeditflag
+	
+
+	
+   	
+	
+What do you mean by "plain text"? What encoding do you have in the file? – tripleee Aug 14 '14 at 19:30
+1 	
+  	
+	
+Also what's the point of decoding and then immediately encoding? I'm guessing removing the .encode('utf-8') would fix your problem. – tripleee Aug 14 '14 at 19:31
+   	
+  	
+	
+Hi, tripleee, thank you so much for your help! Indeed removing the encoding worked, thanks a lot :) The reason I was decoding and encoding again was because I had read this stackoverflow.com/questions/9644099/… and the codec of the "plain text" was already utf-8 as you can see in convert_pdf_to_txt(). that's part of why i was puzzled as even the decoding shouldn't have been necessary, but still it was. thanks a lot! ;) – iammyr Aug 15 '14 at 9:00
+
+	
+
+You are turning a piece of perfectly good Unicode string (back) into a bunch of untyped bytes, which Python has no idea how to handle, but desperately tries to apply the ASCII codec on. Remove the .encode('utf-8') and you should be fine.
+
+See also http://nedbatchelder.com/text/unipain.html
+
+https://arxiv.org/pdf/1602.03606.pdf
+
+https://www.quora.com/Natural-Language-Processing-What-are-algorithms-for-auto-summarize-text
+
+
+
+
 
 

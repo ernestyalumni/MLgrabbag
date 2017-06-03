@@ -2767,14 +2767,19 @@ where
 
 Finally, to tie it back into my original motivation, now that SVM is natively implemented in theano, it would be interesting to try to develop (and of course find appropriate datasets to train and test on) a DNN that will have as its ``outer'' or last layer to be a SVM.  Since SVM is now part of the theano computational graph, optimization (the so-called ``backpropagation'' step) will be done automatically and simply with theano's \verb|grad|, on all the parameters or ``weights'' of the entire model.  
 
-\part{Image Preprocessing; Image Classification}
+\section{Image Preprocessing; Image Classification}
 
-\section{Links, Reading, Online Searches}
+\subsection{Links, Reading, Online Searches}
 
 \begin{itemize}
 \item \href{http://www.ippatsuman.com/2014/08/13/day-and-night-an-image-classifier-with-scikit-learn/}{Day and night: an image classifier with scikit-learn, Giuseppe Cardone, GCardone}
   \end{itemize}
 
+\section{HOG}
+
+\url{http://www.learnopencv.com/histogram-of-oriented-gradients/}
+
+\url{http://www.cs.cornell.edu/courses/cs6670/2011sp/lectures/lec02_filter.pdf}
 
 
 \section{Deep Support Vector Machines (SVM)}
@@ -2961,6 +2966,15 @@ X^{(i)}  & a^{(L)} \\
 \end{equation}
 
 
+\part{Natural Language Processing (NLP) }
+
+\url{https://github.com/davidadamojr/TextRank/blob/master/textrank/__init__.py}
+
+\url{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}
+
+\url{https://stackoverflow.com/questions/25315566/unicodedecodeerror-in-nltks-word-tokenize-despite-i-forced-the-encoding}
+
+
 
 
 
@@ -2977,7 +2991,9 @@ Recurrent neural network - creates an internal state of the network which allows
 ``In sum, for most problems, one could probably get decent performance (even without a second optimization step) by setting the hidden layer configuration using just two rules: (i) number of hidden layers equals one; and (ii) the number of neurons in that layer is the mean of the neurons in the input and output layers.''
 
 
+https://www.quora.com/Natural-Language-Processing-What-are-algorithms-for-auto-summarize-text
 
+https://arxiv.org/pdf/1602.03606.pdf
 
 
 
