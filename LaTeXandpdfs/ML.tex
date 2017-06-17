@@ -10,7 +10,8 @@
 
 \documentclass[10pt]{amsart}
 \pdfoutput=1
-\usepackage{mathtools,amssymb,lipsum,caption}
+%\usepackage{mathtools,amssymb,lipsum,caption}
+\usepackage{mathtools,amssymb,caption}
 
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -93,6 +94,11 @@
  }
 %\lstlistoflistings
 
+\begin{abstract}
+	Everything about Machine Learning.  
+\end{abstract}
+
+
 \maketitle
 
 
@@ -113,9 +119,6 @@ youtube      : ernestyalumni \\
 
 \begin{multicols*}{2}
 
-\begin{abstract}
-Everything about Machine Learning.  
-\end{abstract}
 
 \part{Data; Data Wrangling, Data cleaning, Web crawling, Data input}
 
@@ -2380,7 +2383,7 @@ Consider then this cost functional, also known as the ``Lagrangian'', which we w
 Of note, we introduced \emph{Lagrangian multipliers} $\lambda_i$, $\forall i \in 1,2\dots m$, $\lambda_i \in \mathbb{R}$, to account for each of the constraints given in Eq. \ref{Eq:ineqconstraints}.  
 
 The Karush-Kuhn-Tucker (KKT) condition tells us that $(\theta,b)$ makes $\mathcal{L}$ a minimum for a certain $\lambda$ (and that these $\lambda_i$'s exist), and that these relations hold:\cite{Nowa2008}, \cite{ChZa2013}:
-\begin{equation}\label{Eq:partialsL}
+\begin{equation}\label{Eq:partialsL2}
   \begin{aligned}
     & \frac{ \partial \mathcal{L}}{ \partial \theta_j} = 0 = \theta_j - \sum_{i=1}^m \lambda_i y^{(i)} x_j^{(i)} \qquad \, j=1,2\dots d \\ 
     & \frac{ \partial \mathcal{L}}{ \partial b} = 0 = -\sum_{i=1}^m \lambda_i y^{(i)}
@@ -2398,7 +2401,7 @@ $\forall \, i =1,2,\dots m$, we want input data example $X^{(i)}$ to be ``far aw
 \sum_{j=1}^m\lambda_iy^{(i)} =0
   \end{equation}
 
-It's interesting to see that the step in taking the partial derivatives of $\mathcal{L}$ in Eq. \ref{Eq:partialsL} is analogous to the construction/computation of dual ``conjugate'' variables, conjugate momentum, in physics.  
+It's interesting to see that the step in taking the partial derivatives of $\mathcal{L}$ in Eq. \ref{Eq:partialsL2} is analogous to the construction/computation of dual ``conjugate'' variables, conjugate momentum, in physics.  
 
 Notice then that
 \begin{equation}
@@ -2782,6 +2785,7 @@ Finally, to tie it back into my original motivation, now that SVM is natively im
 \subsection{Right $R$-modules}
 
 Consider, as a start, the total given (training) input data, consisting of $m\in \mathbb{Z}^+$ (training) examples, each example, say the $i$th example, being represented by a "feature" vector of $d$ features, $X^{(i)} \in \mathbb{K}^d$, where $\mathbb{K}$ is a field or (categorical) classes, i.e. as examples of fields, the real numbers $\mathbb{R}$, or integers $\mathbb{Z}$, so that $\mathbb{K} = \mathbb{R},\mathbb{Z}$ or $\mathbb{K} = \lbrace 0 ,1,\dots K-1\rbrace$, where $K$ is the total number of classes that a feature could fall into.  Note that for this case, the case of $\mathbb{K}=\lbrace 0 ,1,\dots K-1\rbrace$, for $K$ classes, though labeled by integers, this set of integer labels is \emph{not} equipped with ordered field properties (it is meaningless to say $0<1$, for example), nor the usual field (arithmetic) operations (you cannot add, subtract, multiply, or even take the modulus of these integers).  How can we "feed into" our machine such (categorical) class data?  Possibly, we should intuitively think of the Kronecker Delta function:
+
 \[
 \delta_{iJ} = \begin{cases} 0 & \text{ if } i\neq J \\ 
  1 & \text{ if } i = J \end{cases}
@@ -2961,8 +2965,41 @@ X^{(i)}  & a^{(L)} \\
 \end{equation}
 
 
+\part{Natural Language Processing (NLP)}
 
+\section{TextRank}
 
+\href{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}{TextRank: Bringing Order into Texts, Rada Mihalcea and Paul Tarau}
+
+Mihalcea and Tarau \cite{MiTa}.  
+
+Let $G=(V,E)$ be a directed graph with set of vertices $V$, set of edges $E$, $E\subset V \times V$.  
+
+$\forall \, $ given vertex $V_i$, let $\text{In}(V_i) \subset V \equiv $ set of vertices that point to it $\equiv $ "predecessors", \\
+let $\text{Out}(V_i) \subset V \equiv $ set of vertices that vertex $V_i$ points to "successors"
+
+Let score $S:V \to \mathbb{R}$, 
+\begin{equation}
+ S(V_i) := (1-d) + d \sum_{j\in \text{In}(V_i) } \frac{1}{ (\text{Out}(V_j))} S(V_j)
+\end{equation}
+where $0\leq d\leq 1$.  
+
+Usually $d=0.85$.  
+
+Let $t\in \mathbb{Z}^+$.  Let $t=0$.  $\forall \, V_i \in V$, $S(V_i)(t=0) \in \mathbb{R}$, randomly assigned.  
+
+Weighted graphs.  
+\begin{equation}
+WS(V_i) = (1-d) + d* \sum_{V_j \in \text{In}(V_i) } \frac{w_{ji} }{ \sum_{V_k \in \text{Out}(V_j) } w_{jk} } WS(V_j)
+\end{equation}
+
+$0\leq w_{ij} \leq 10$  
+
+\subsection{Keyword Extraction}
+
+2 vertices \emph{connected} if corresponding lexical units co-occur within window of max. $N$ words.  $2\leq N \leq 10$.  
+
+\href{http://www.aclweb.org/anthology/I13-1062}{Topic Ranking}
 
 \part{Notes}
 
@@ -2978,11 +3015,293 @@ Recurrent neural network - creates an internal state of the network which allows
 
 
 
+\part{Unsupervised Learning}
 
+\section{PageRank}  
 
+cf. Gleich (2015) \cite{Glei2015}
 
+Let $i=1,2\dots N$; $N=$ total number of "states".  If "states" are represented as vertices $v_i \in V \in \mathbf{\text{(Finite)Set}}$, then $i$ are some choice of labels for $v_i$'s.  
 
+Let $P_{ij} :=$ probability of transitioning from $j$ to $i$.  
+
+Clearly $P(i) \equiv $ probability of state $i$ in next iteration $=P_{ij}P(j)$.  
+
+Let $\mathbf{v}:\lbrace 1,2, \dots N \rbrace \to \mathbb{R}$, $0\leq \mathbf{v}(i) \leq 1$.  
+
+$\mathbf{v}(i) = $ (normalized) "probability" (likelihood) $i \in \lbrace 1,2, \dots N \rbrace$ of \emph{teleportation distribution} of randomly transitioning or teleporting for state $i$.  
+
+Note that this $\mathbf{v}$ is also represented as vector:
+\[
+\mathbf{v} \xrightarrow{ \text{ vectorize } } \mathbf{v} \in \mathbb{R}^N
+\]
+$\alpha \in \mathbb{R}^+$, $0\leq \alpha \leq 1$ is a tuned parameter.  
+
+Then Gleich considers this as the (vectorized) PageRank algorithm:
+\begin{equation}
+\alpha P_{ij}x_j + (1-\alpha) v_i =0 
+\end{equation}
+with $\mathbf{x}$ being what Gleich denotes as the PageRank vector.  
+
+So in Gleich's notation, 
+\begin{equation}
+(\alpha \mathbf{P} + (1-\alpha)\mathbf{v} \mathbf{e}^T )\mathbf{x} = \mathbf{x}  \text{ or } ( \mathbf{1} - \alpha \mathbf{P}) \mathbf{x} = (1-\alpha) \mathbf{v}
+\end{equation}
+cf. Eq. (2.1) and (2.2) of Gleich (2015) \cite{Glei2015}, respectively.  
+
+Following Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}, and their notation now:
+
+let $u$ be a webpage.  $u \equiv x \in X$, where $X$ is a set (that could represent the set of vertices $X$).  Let $Y = $ set of all edges of this graph.  
+
+Let $F_u := $ set of pages that $u$ points to, i.e. 
+\begin{equation}
+F_u = \lbrace x | x\in X, \begin{aligned} & u = o(y) \\
+& x = t(y) \end{aligned} \text{ for some } y \in Y \rbrace 
+\end{equation}
+
+Let $B_u : = $ set of pages that point to $u$, i.e. 
+\begin{equation}
+	B_u = \lbrace x | x\in X, \begin{aligned} & x = o(y) \\
+	& u= t(y) \end{aligned} \text{ for some } y\in Y \rbrace 
+\end{equation}
+$N_u = |F_u| = $ number of links from $u$.  Let $c\in \mathbb{R}$ normalization factor (so total rank of all webpages constant).  
+
+Define simple ranking $R$, 
+\begin{equation}
+\begin{aligned}
+& R:X \to \mathbb{R}  \\
+& R(u) = c\sum_{ v\in B_u } \frac{R(v) }{N_v}
+\end{aligned}
+\end{equation}
+
+Consider 
+\[
+\begin{gathered}
+\sum_{u \in X} R(u) = c\sum_{u \in X} \sum_{v\in B_u} \frac{R(v) }{ N_v} \Longrightarrow \frac{ \sum_{u\in X} R(u)}{ \sum_{u\in X} \sum_{ v\in B_u } \frac{R(v)}{N_v} } = c   \\
+	c=\frac{R(u)}{ \sum_{v\in B_u } \frac{R(v) }{ N_v} }
+\end{gathered}
+\]
+
+Consider $u \in X$.  $\forall \, v \in B_u$, $N_v \geq 1$ (since connected graph \textbf{must} be connected, by definition).  
+
+$c<1$ since there's the case of $F_u = \emptyset$ and "their weight is lost from system (cf. Sec. 2.7 of Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998})".  
+
+There's a problem if we have the case of circuits of size $n=1$, $n=2$.  To overcome existence of circuits (rank sinks), 
+\begin{definition}
+	Let $E(u) := $ source of ranks.  
+	
+	$R' \equiv $ PageRank, 
+	\begin{equation}
+	\begin{aligned}
+	& R' : X\to \mathbb{R}  \\
+	& R'(u) = c\sum_{v\in B_u } \frac{R'(v)}{N_v} + cE(u)
+	\end{aligned}
+	\end{equation}
+s.t. $c$ maximized, $\| R' \|_1 = 1$ ( $\| R' \|_1$ denotes the $L_1$ norm of $R'$)	
+\end{definition}
+
+Generalizing this, for $A_{uv} \equiv $ "likelihood of transition \textbf{from} $v$ \textbf{to } $u$, so that $A_{uv} = \frac{1}{N_v}$ for this special case.  
+
+\[
+R'(u) = c\sum_{v\in B_u } A_{uv} R'(v) + cE(u)
+\]
+Both Page, Brin, Motwani, and Winograd and Gleich rewrites this as 
+\[
+R' = c(A + E\mathbf{e}^T)R'
+\]
+with $\mathbf{e}$ being a column of $1$'s.  
+
+Indeed, 
+\[
+E_{i1} (\mathbf{e}^T)_{1k} R'_{k1} = E_{i1} \| R' \|_1 = E_{i1} 
+\]
+since $\| R' \|_1=1$ by (defined) normalization.  
+
+$E$ is a user-defined parameter, possibly uniform $\forall \, u \in X$.  
+\begin{equation}
+R'(u) - c\sum_{v\in B_u} A_{uv} R'(v) = cE(u)
+\end{equation}
+
+\subsubsection{PageRank algorithm by Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}}
+	
+cf. 12.6 \emph{Computing Page Rank}, pp. 6 of Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}.  
+
+Let $S$ be almost any vector over $X$; $\begin{aligned} & \quad \\
+	& S:X \to \mathbb{R} \\
+	& S(u) \geq 0 \end{aligned}$, \, (e.g. $E$).  Then, for iterations $t= 0,1,\dots \in \mathbb{Z}^+$, 
+and so for 
+\[
+R: X \times \mathbb{Z}^+ \to \mathbb{R}
+\]
+Then 
+\[
+\begin{gathered}
+R(u,0) \equiv R_0(u) = S(u)  \qquad \, (R_0 \leftarrow  S)
+\end{gathered}
+\]
+
+$ \forall \, t \in \mathbb{Z}^+, \,$ 
+\[
+\begin{gathered}
+	 \forall \, u \in X, \, R(u,t+1) = A_{uv} R(v,t)  \\
+	d= ( \| R(u,t) \|_1 - \| R(u,t+1) \|_1 ) \\
+	R(u,t+1) = R(u,t+1)+dE \\
+	\delta = \| R(u,t+1) - R(u,t) \|_1 
+\end{gathered}
+\]
+while $\delta > \epsilon$.  
+
+Compare this to the iteration by Gleich (2015) \cite{Glei2015}: 
+\begin{equation}
+\mathbf{x}^{(k+1)} = \alpha \mathbf{P} \mathbf{x}^{(k)} + (1-\alpha) \mathbf{v} 
+\end{equation}
+where
+\[
+\mathbf{x}^{(0)} = \mathbf{v} \text{ or } \mathbf{x}^{(0)} = 0
+\]
+
+Indeed, 
+\begin{equation}
+\begin{gathered}
+R(u) - R(u;t+1) = (\alpha A_{uv} R(v) + (1-\alpha) E) - ( \alpha A_{uv} R(v,t) + (1-\alpha ) E) = \alpha A_{uv}(R(v) - R(v,t) )
+\end{gathered}
+\end{equation}
+Indeed, $R(u,t)$ converges to $R(u)$.  
+
+\subsubsection{PageRank Vector Iteration Implementation \cite{TUMHPC2016}}
+
+cf. Nov. 14. Dwarf No. 2 - Sparse Linear Algebra lecture by Dr. Bader \cite{TUMHPC2016}, \url{http://www5.in.tum.de/lehre/vorlesungen/hpc/WS16/sparseLA.pdf}  
+
+Define 
+\begin{equation}
+	A_{ij} \in \text{Mat}_{\mathbb{R}}(N,N) 
+\end{equation}
+where $N=$ total number of webpages (vertices) $= |X|$, with $A_{ij}$ defined as 
+\begin{equation} 
+A_{ij} = \begin{cases} 
+1 & \text{ if $ \exists \, $ edge $ y \in Y$ \textbf{ from } $j$ \textbf{ to } $i$ (i.e. $\exists \, y \in Y$ s.t. $\begin{aligned} & \quad \\ & o(y) = x_j \\ & t(y) = x_i \end{aligned}$ } ) \\
+0 & \text{ otherwise } \end{cases}   
+\end{equation}
+with 
+\begin{equation}
+N_j = \sum_{i=1}^N A_{ij} = \text{ total number of links from $j$th webpage (vertex) } = |F_j |
+\end{equation}
+and so \emph{define} $B_{ij}$
+\begin{equation}
+\begin{aligned}
+	& B_{ij} \in \text{Mat}_{\mathbb{R}}(N,N) \\ 
+	& B_{ij} := \frac{1}{N_j} A_{ij}
+\end{aligned}
+\end{equation}
+
+Compute PageRank vector via vector iteration 
+\begin{equation}
+\begin{gathered} 
+\mathbf{x}^{(m)} = \alpha B \mathbf{x}^{(m-1)} + (1-\alpha) \frac{1}{N} \mathbf{e} \text{i.e. }  \\
+R(u;t+1) = \alpha B_{uv} R(v;t) + (1-\alpha ) E(u)
+\end{gathered}
+\end{equation}
+
+$B$ is a sparse matrix, so use SpMV, i.e. sparse matrix vector multiplication.  
+
+Now, we should talk about \emph{Sparse Linear Algebra}.  
+
+\section{Data Structures for Sparse Matrices}  
+
+cf. Part II: Data Structures for Sparse Matrices in Nov. 14. Dwarf No. 2 - Sparse Linear Algebra lecture by Dr. Bader \cite{TUMHPC2016}, \url{http://www5.in.tum.de/lehre/vorlesungen/hpc/WS16/sparseLA.pdf}.  
+
+\subsection{Coordinate Scheme (aka Triple Scheme) }
+
+We want
+\begin{equation}
+\begin{gathered}
+A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i,N_j) \mapsto (a_{ij},i,j)\mathbb{F}  \times \mathbb{Z}^+ \times \mathbb{Z}^+
+\end{gathered}
+\end{equation}
+Let $K \in \mathbb{Z}^+ = $ total number of \textbf{nonzero} entries in $A_{ij}$.  
+
+The coordinate scheme is implemented either as an array of struct (of size $K$), i.e. 
+\begin{equation}
+\begin{aligned}
+& M:\mathbb{Z}^+ \to \mathbb{F} \times \mathbb{Z}^+ \times \mathbb{Z}^+ \\
+& M(I) = (A(I), i(I), j(I) )
+\end{aligned}
+\end{equation}
+or struct of array, i.e. 
+\begin{equation}
+	\begin{gathered}
+	A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i,N_j) \mapsto M \in (\mathbb{Z}^+ \to \mathbb{F}) \times ( \mathbb{Z^+} \times \mathbb{Z}^+)^2 \text{ with } \\
+	M_1(I) = A(I) , M_2(I) = i(I), M_3(I) = j(I)
+	\end{gathered}
+\end{equation}
+used, e.g. in Matlab, or as input format (format to input in ).  Note also that it's possibly not sorted, i.e. $i=i(I), j= j(I)$ may not follow any lexicographic order, depending on $I$.  
+
+\subsection{Compressed Row Storage (CRS)  }
+
+2 arrays of size $K$ with $a_{ij}$ and $j$, i.e. consider $a: \lbrace 1, 2 , \dots K \rbrace \to \mathbb{F}$.  
+
+\begin{equation}
+\begin{gathered}
+A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i , N_j) \mapsto \begin{aligned} 
+	& a:\lbrace 1,2, \dots K \rbrace \to \mathbb{F}, \, \\ 
+	& j : \lbrace 1,2, \dots K \rbrace \to \mathbb{Z}^+ , \, \\
+	& IA: \lbrace 0 ,1,\dots N_i \rbrace \to \mathbb{Z}^+ \in \text{Hom}(\mathbb{Z}^+,\mathbb{F}), \text{Hom}(\mathbb{Z}^+,\mathbb{Z}^+)^2
+\end{aligned}
+\end{gathered}
+\end{equation}
+
+Note that we are using left-to-right, top-to-bottom "row-major" order, which is amenable to so-called (thread) warp coalescing for memory usage/optimization in CUDA C/C++.  
+
+So, to reiterate, we have \\
+$a(k) = a_{ij}$ for some surjective $(i,j) ]\mapsto k$ \\
+$j(k) \in \mathbb{Z}^+$ 
+\[
+IA(i) = \begin{cases}0  & \text{ if } i = 0 \\
+& IA(i-1) + (\text{number of nonzero elements of $(i-1)$th row in original matrix}) \end{cases}
+\]
+Let's take a look at $IA: \lbrace 0,1,\dots N_i \rbrace \to \mathbb{Z}^+$ in greater detail.  Consider these simple cases:  \\
+$IA(0)= 0$ \\
+$IA(i) = IA(i-1) + (\text{number of nonzero elements of $(i-1)$th row in original matrix, with $i=0,1,\dots N_i-1$, in this particular case)}$
+
+And so 
+\[
+IA(1) = 0+\text{number of nonzero elements of $0$th row in original matrix}
+\]
+(we started counting from $0$ in this case, \textbf{not} from $1$).  
+
+\[
+IA(2) = IA(1)+\text{number of nonzero elements of "$1$th" row in original matrix}
+\]
+(or "second" row, counting from, starting from $1$) 
+
+Clearly $IA(N_i)=K$ since 
+\[
+IA(i) = \sum_{l=0}^{i-1} (\text{number of nonzero elements in $l$th row ($0$-based country; $l=0,1,\dots N_i-1$)})
+\]
+For $1$-based counting (i.e. row $=1,2,\dots N_i$), 
+\begin{equation}
+IA(i) = \begin{cases} 0 & \text{ if } i=0 \\
+ \sum_{l=1}^i (\text{number of nonzero elements in $l$th row}) & \end{cases}
+\end{equation}
+and so for 
+\[
+(i,j ) \in \lbrace 1,2, \dots N_i \rbrace \times \lbrace 1,2, \dots N_j \rbrace \mapsto IA(i-1) + j = k \in \lbrace 1,2, \dots K \rbrace 
+\]
+\[
+A_{ij}x_j = a(IA(i-1+j))x_j(j(k))
+\]
+
+\subsection{ELLPACK Format}
+
+$\forall \, i \in \lbrace 1, 2, \dots N_i \rbrace$, let number of nonzero elements in $i$th row $\leq K_{\text{max}}$.  
+
+Then consider storing values in $a_{ik} \in \text{Mat}_{\mathbb{F}}(N_i,K_{\text{max}})$.  
+
+Store column indices $j\in \lbrace 1,2, \dots N_j \rbrace$ (notice "$1$-based counting") in $j\in \text{Mat}_{\mathbb{F}}(N_i,K_{\text{max}})$.  
+
+$j_{ik} =0$ if there is $0$ entry for $A_{ij}=0$.  
 \end{multicols*}
+
 \begin{thebibliography}{9}
 \bibitem{HTF2009}
 Trevor Hastie, Robert Tibshirani, Jerome Friedman.   \textbf{The Elements of Statistical Learning: Data Mining, Inference, and Prediction}, Second Edition (Springer Series in Statistics) 2nd ed. 2009. Corr. 7th printing 2013 Edition.  ISBN-13: 978-0387848570.  \url{https://web.stanford.edu/~hastie/local.ftp/Springer/OLD/ESLII_print4.pdf}
@@ -3053,6 +3372,20 @@ Hubert Nguyen. \textbf{GPU Gems 3}.  Addison-Wesley Professional (August 12, 200
 \bibitem{HCL}
 Chih-Wei Hsu, Chih-Chung Chang, and Chih-Jen Lin.  \emph{A Practical Guide to Support Vector Classification}.  \url{http://www.ee.columbia.edu/~sfchang/course/spr/papers/svm-practical-guide.pdf}
 
+\bibitem{MiTa}
+Rada Mihalcea and Paul Tarau.  "TextRank: Bringing Order into Texts."  
+\url{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}  
+
+\bibitem{Glei2015}
+David F. Gleich.  \emph{PageRank Beyond the Web.}  \textbf{SIAM Review}.  Vol. 57, No. 3, pp. 321-363 2015  
+  
+\bibitem{PBMW1998}  
+Page, Lawrence and Brin, Sergey and Motwani, Rajeev and Winograd, Terry.  "The PageRank Citation Ranking: Bringing Order to the Web." Technical Report. Stanford InfoLab.  1998.  \url{http://ilpubs.stanford.edu:8090/422/1/1999-66.pdf}  
+  
+\bibitem{TUMHPC2016}
+Prof. Dr. Michael Bader, with Alexander P\"{o}ppl, Valeriy Khakhutskyy (Tutorials).  High Performance Computing (HPC) - Algorithms and Applications - Winter 16/17.  Informatics V - Scientific Computing.  Technical University of Munich (TUM)
+\url{https://www5.in.tum.de/wiki/index.php/HPC_-_Algorithms_and_Applications_-_Winter_16}
+  
   
 \end{thebibliography}
 
