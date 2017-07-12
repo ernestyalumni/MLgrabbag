@@ -12,6 +12,8 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
   * `sampleinputdataX_sklearn` - collection of sample data from `sklearn`
 - * `theano_ML.ipynb` - Coursera's *Introduction to Machine Learning*, taught by Ng, but with the syntax translated into *`theano`*, and to *run on the **GPU** *.
     * Notably, [Week 1 Linear Algebra Review of Coursera's Machine Learning Introduction, taught by Ng](https://www.coursera.org/learn/machine-learning/supplement/xRMqw/lecture-slides) is translated into `theano` on the *GPU*
+    * [`./CUDNN/`](https://github.com/ernestyalumni/MLgrabbag/tree/master/CUDNN)  Example scripts, examples of using CUDNN, directly  
+
 
 ## Notes on `theano`
 
