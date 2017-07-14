@@ -81,12 +81,18 @@ class Axon(object):
 			rng = np.random.RandomState(1234)
 
 		if Theta is None:
-			Theta_values = np.asarray( 
-				rng.uniform( 
-					low=-np.sqrt(6. / ( s_l + s_lp1 )), 
-					high=np.sqrt(6. / ( s_l + s_lp1 )), size=(s_l, s_lp1) ), 
-					dtype=theano.config.floatX 
-			)
+			try:
+				Theta_values = np.asarray( 
+					rng.uniform( 
+						low=-np.sqrt(6. / ( s_l + s_lp1 )), 
+						high=np.sqrt(6. / ( s_l + s_lp1 )), size=(s_l, s_lp1) ), 
+						dtype=theano.config.floatX 
+				)
+				
+			except MemoryError:
+				Theta_values = np.zeros((s_l,s_lp1)).astype(theano.config.floatX)	
+			
+				
 			if activation == T.nnet.sigmoid:
 				Theta_values *= np.float32( 4 )
 			
@@ -265,13 +271,13 @@ class Feedforward(object):
 		L = self.L
 		number_of_weights_1 = len(self.Axons[0].__get_state__()["params"]) # number of weights related to the 1st Thetab
 
-		Axonl_vals=[args[w] for w in range(number_of_weights_1)]				
+		Axon1_vals=[args[w] for w in range(number_of_weights_1)]				
 
-		self.Axons[0].__set_state__(*Axon1_vals)
+		self.Axons[0].__set_state__(*Axon1_vals)   
 
 		flattened_index = number_of_weights_1-1 # count from this value
 		for l in range(1,L):  # l=1,...L-1 corresponds to index idx=1,...L-1 (Python counts from 0;I know, it's confusing)
-			number_of_weightsl = len(self.Thetabs[l].__get_state__()['params'])# number of weights in layer l
+			number_of_weightsl = len(self.Axons[l].__get_state__()['params'])# number of weights in layer l
 			Axon_vals=[]
 			for w in range(number_of_weightsl):
 				Axon_vals.append( args[w+1+flattened_index] )
@@ -303,7 +309,7 @@ class DNN(object):
 	=========================
 	
 	"""
-	def __init__(self, DNN_model, X=None, y=None, lambda_val=1. ):
+	def __init__(self, DNN_model, y=None,X=None  ):
 		""" Initialize MemoryBlock class
 		
 		INPUT/PARAMETER(S)
@@ -314,55 +320,298 @@ class DNN(object):
 		
 		@type y : numpy array of size dims. (m,K)
 		@param y : output data of training examples
-
-		# regularization, "learning", "momentum" parameters/constants/rates
-		@type lambda_val : float
-		@param lambda_val : regularization constant
 		
 		"""
 		self.DNN_model = DNN_model
 
 		if X is None:
-			X = T.matrix(dtype=theano.config.floatX)
-
-		self.X = theano.shared( X.astype(theano.config.floatX))
+			self.X = T.matrix(dtype=theano.config.floatX)
+		else:
+			self.X = theano.shared( X.astype(theano.config.floatX))
 
 		if y is None:
 			y = T.matrix(dtype=theano.config.floatX)
+		else:
+			self.y = theano.shared( y.astype(theano.config.floatX))
 
-		self.y = theano.shared( y.astype(theano.config.floatX))
+	def build_J_L2norm_w_reg(self, lambda_val, y_sym=None):
+		""" build_J_L2norm_w_reg - build or make cost functional, of the form of the L2 norm (i.e. Euclidean distance norm)
+
+		# regularization, "learning", "momentum" parameters/constants/rates
+		@type lambda_val : float
+		@param lambda_val : regularization constant
+		"""
+		if y_sym is not None:
+			self.y = y_sym
+		else:
+			y_sym = self.y
+		
+		Thetas_only = self.DNN_model.__get_state__()['Thetas']
+		
+		h = self.DNN_model._get_outer_layer_()
+		
+		lambda_val = np.cast[theano.config.floatX]( lambda_val )  # regularization constant
+		J = build_cost_functional_L2norm_w_reg( lambda_val, 
+									h, # we want y_vals from above, predicted value for y
+									y_sym, Thetas_only)
+
+		J = sandbox.cuda.basic_ops.gpu_from_host( J )
+		
+		self.J_Theta = J
+		return J
+
+	def build_J_L2norm(self, y_sym=None):
+		""" build_J_L2norm - build or make cost functional, of the form of the L2 norm (i.e. Euclidean distance norm)
+		"""
+		if y_sym is not None:
+			self.y = y_sym
+		else:
+			y_sym = self.y
+		
+		Thetas_only = self.DNN_model.__get_state__()['Thetas']
+		h = self.DNN_model._get_outer_layer_()
+		
+		J = build_cost_functional_L2norm(h, y_sym, Thetas_only)
+		J = sandbox.cuda.basic_ops.gpu_from_host( J )
+		self.J_Theta = J
+		return J
+
+	def build_J_xent(self, y_sym=None):
+		""" build_J_L2norm - build or make cost functional, of the form of the L2 norm (i.e. Euclidean distance norm)
+		"""
+		if y_sym is not None:
+			self.y = y_sym
+		else:
+			y_sym = self.y
+		
+		Thetas_only = self.DNN_model.__get_state__()['Thetas']
+		h = self.DNN_model._get_outer_layer_().flatten()
+		
+		J = build_cost_functional_xent(h, y_sym, Thetas_only)
+		J = sandbox.cuda.basic_ops.gpu_from_host( J )
+		self.J_Theta = J
+		return J
+
+	def build_J_xent_w_reg(self, lambda_val,y_sym=None):
+		""" build_J_L2norm - build or make cost functional, of the form of the L2 norm (i.e. Euclidean distance norm)
+		"""
+		if y_sym is not None:
+			self.y = y_sym
+		else:
+			y_sym = self.y
+		
+		Thetas_only = self.DNN_model.__get_state__()['Thetas']
+		h = self.DNN_model._get_outer_layer_().flatten()
+		
+		lambda_val = np.cast[theano.config.floatX]( lambda_val )  # regularization constant
+
+		J = build_cost_functional_xent_w_reg(lambda_val,h, y_sym, Thetas_only)
+		J = sandbox.cuda.basic_ops.gpu_from_host( J )
+		self.J_Theta = J
+		return J
+
+
+
+	###############################
+	# BUILD MODEL('S UPDATE STEP) #
+	###############################
+
+	def build_update(self, alpha=0.01, beta=0.0):
+		"""
+		@type alpha : float
+		@param alpha : learning rate
+		
+		@type beta : float
+		@param beta : "momentum" parameter (it's in the update step for gradient descent)
+
+		"""
+		
+		Thetabs = self.DNN_model.__get_state__()['params']
+		J = self.J_Theta
+
+		
+		self.updateExpression, self.gradDescent_step = build_gradDescent_step( 
+								J, Thetabs, 
+								alpha,beta)
+
+	###############
+	# TRAIN MODEL #
+	###############	
+		
+	def train_model_full(self, max_iters=10):
+		print "theano.config.allow_gc =: " , theano.config.allow_gc
+
+		train_errors = np.ndarray(max_iters)
+		
+		learn_grad = self.gradDescent_step
+		
+		
+		for iter in range( max_iters) :
+			error=0.
+			J_train=learn_grad()
+			
+			if np.isnan( J_train ) or np.isinf( J_train):
+				error += np.array( 1.)
+			else: 
+				error += np.array( J_train)
+
+			train_errors[iter] = error
+
+		return train_errors
+
+	#################################
+	## for Long-Term Serialization ##
+	## cf. http://deeplearning.net/software/theano/tutorial/loading_and_saving.html#long-term-serialization
+	#################################
+	
+	def __get_state__(self):
+		""" __getstate__(self)  
+		
+		returns a Python list of numpy arrays, (through theano.shared.get_value() )
+		"""
+		
+		params = self.DNN_model.__get_state__()['params']
+		params_vals = [weight.get_value() for weight in params]
+		return params_vals
+		
+	def __set_state__(self, *args):
+		""" __setstate__(self,*args)
+		
+		@type *args : expect a flattened out Python list of Theta* classes
+		@param *args : use the "power" of *args so we're flexible about Python function argument inputting (could be a list, could be separate entries)
+		"""
+		
+		self.DNN_model.__set_state__( *args)
+
+			
+	def save_parameters(self, filename='objects.save'):
+		""" save_parameters (save the weights or parameters of this model as numpy arrays that are pickled)
+		
+		@type filename : string
+		@param filename : string to name the saved file
+		"""	
+		param_vals = self.__get_state__()
+		number_of_params = len(param_vals )
+		
+		for param_idx in range(number_of_params):
+			f = open(filename+str(param_idx),'wb')
+			np.save(f, param_vals[param_idx] )
+			f.close()
+		
+
 
 	
-
-
-def build_cost_functional(L, lambda_val, h, y_sh, Thetas):
-	""" build_cost_functional (with regularization) J=J_y(Theta,b) # J\equiv J_y(\Theta,b), but now with 
-	X,y being represented as theano symbolic variables first, before the actual numerical data values are given
-
+def build_cost_functional_L2norm(h,y_sym,Thetas):
+	""" 
+	build_cost_functional_L2norm (with regularization) J=J_y(Theta,b) # J\equiv J_y(\Theta,b), 
+	for the L2 norm, or Euclidean space norm
+	
 	INPUT/PARAMETERS
 	================
-	@type L     : (positive) integer for (total) number of layers L
-	@param L    : number of layers L
+	@type y_sym  : theano symbolic matrix, such as T.matrix() or theano shared variable
+	@param y_sym : output data as a symbolic theano variable or theano shared variable
+NOTE: y_sym = T.matrix(); # this could be a vector, but I can keep y to be "general" in size dimensions
 	
-	@type y_sh  : theano shared variable  
-	@param y_sh : output data as a theano shared variable
-	
-	@type h     : theano shared variable of size dims. (m,K)
+	@type h     : theano shared variable of size dims. (K,m) (size dim. might be (m,K) due to right action
 	@param h    : hypothesis
 
 	@type Thetas : tuple, list, or (ordered) iterable of Theta's as theano shared variables, of length L
-	@params Thetas : weights or parameters thetas for all the axons l=0,1,...L-1
+	@params Thetas : weights or parameters thetas for all the layers l=1,2,...L-1
 	NOTE: remember, we want a list of theano MATRICES, themselves, not the class
 
-	"""
-	m = y_sym.shape[1].astype(theano.config.floatX)
-	J_theta = T.mean( T.sum(
-			- y_sym * T.log(h) - (np.float32(1)-y_sym) * T.log( np.float32(1) - h), axis=0), axis=0)
-	
-	reg_term = np.float32(lambda_val/ (2. )) /m *T.sum( [ T.sum( Theta*Theta) for Theta in Thetas] )
+	RETURN/OUTPUTS
+	==============
+	@type J_theta : theano symbolic expression (computational graph)
 
-	J_theta = sandbox.cuda.basic_ops.gpu_from_host( J_theta + reg_term )
+	"""
+	J_theta = np.cast[theano.config.floatX](0.5) * T.mean(T.sqr(h-y_sym))
+
 	return J_theta
+
+def build_cost_functional_L2_w_reg(lambda_val,h,y_sym,Thetas):
+	""" 
+	build_cost_functional_L2norm (with regularization) J=J_y(Theta,b) # J\equiv J_y(\Theta,b), 
+	for the L2 norm, or Euclidean space norm, but now with 
+	regularization
+
+	INPUT/PARAMETERS
+	================
+	@type y_sym  : theano symbolic matrix, such as T.matrix() or theano shared variable
+	@param y_sym : output data as a symbolic theano variable or theano shared variable
+NOTE: y_sym = T.matrix(); # this could be a vector, but I can keep y to be "general" in size dimensions
+	
+	@type h     : theano shared variable of size dims. (K,m) (size dim. might be (m,K) due to right action
+	@param h    : hypothesis
+
+	@type Thetas : tuple, list, or (ordered) iterable of Theta's as theano shared variables, of length L
+	@params Thetas : weights or parameters thetas for all the layers l=1,2,...L-1
+	NOTE: remember, we want a list of theano MATRICES, themselves, not the class
+
+	RETURN/OUTPUTS
+	==============
+	@type J_theta : theano symbolic expression (computational graph)
+
+	"""
+	J_theta = np.cast[theano.config.floatX](0.5) * T.mean(T.sqr(h-y_sym))
+
+	reg_term = T.mean( [ T.sum( T.sqr(Theta), acc_dtype=theano.config.floatX) for Theta in Thetas], acc_dtype=theano.config.floatX )
+	reg_term = np.cast[theano.config.floatX](lambda_val/ (2.))*reg_term
+
+	J_theta = J_theta + reg_term
+	return J_theta
+
+def build_cost_functional_xent(h,y,Thetas):
+	"""
+	xent - cross entropy
+	"""
+	J_binary=T.nnet.binary_crossentropy(h,y).mean()
+	return J_binary
+
+def build_cost_functional_xent_w_reg(lambda_val,h,y,Thetas):
+	"""
+	xent - cross entropy
+	"""
+	J_binary=T.nnet.binary_crossentropy(h,y).mean()
+
+	reg_term = T.mean( [ T.sum( T.sqr(Theta), acc_dtype=theano.config.floatX) for Theta in Thetas], acc_dtype=theano.config.floatX )
+	reg_term = np.cast[theano.config.floatX](lambda_val/ (2.))*reg_term
+
+	J_binary += reg_term
+
+	return J_binary
+
+
+def build_gradDescent_step( J, Thetabs, alpha =0.01, beta = 0.0):
+	""" build_gradDescent_step - gradient Descent (with momentum), but from build_cost_functional for the J
+
+	INPUT/PARAMETERS:
+	=================
+	@param J     : cost function (from build_cost_function)
+	
+	@type Thetabs  : Python list (or tuple or iterable) of Thetas, weights matrices, and intercept "row" arrays or theano equivalent
+	@param Thetabs : weights or i.e. parameters
+	
+	
+	@param alpha : learning rate
+	
+	@param beta  : "momentum" constant (parameter)
+
+	RETURN(S)
+	=========
+	@type updateThetas, gradientDescent_step : tuple of (list of theano symbolic expression, theano function)
+
+	"""
+	updateThetabs = [ sandbox.cuda.basic_ops.gpu_from_host( 
+					Theta - np.float32( alpha) * T.grad( J, Theta) + np.float32(beta)*Theta ) for Theta in Thetabs]
+	
+
+	gradientDescent_step = theano.function(inputs = [],
+											outputs = J, 
+											updates = zip(Thetabs,updateThetabs) )
+
+	return updateThetabs, gradientDescent_step
+
+
 
 
 
@@ -390,9 +639,24 @@ if __name__ == "__main__":
 	test_h2 = theano.function(inputs=[],outputs=ANN2._get_outer_layer_() )
 	print(test_h2())
 	
+	y_sh_test = theano.shared( np.arange(4,4+m_test*2).reshape(m_test,2).astype(theano.config.floatX) )
 	
-	
-	
+	DNN2=DNN(ANN2,y_sh_test.get_value(),X_sh_test.get_value() )
+
+	DNN2.build_J_L2norm()
+
+	DNN2.build_update()
+
+	errs2= DNN2.train_model_full(max_iters=2)
+
+	s_ls_test = [d_test,2*d_test,1]
+	BNN2 = Feedforward(2,s_ls_test,activation_fxn=T.nnet.sigmoid, psi_Lm1=T.nnet.softmax)
+	BNN2.connect_through(X_sh_test)
+
+	DBNN2=DNN(BNN2,np.random.randint(2,size=3),X_sh_test.get_value() )
+	DBNN2.build_J_xent()
+	DBNN2.build_update()
+	berrs2= DBNN2.train_model_full(max_iters=2)
 
 
 
