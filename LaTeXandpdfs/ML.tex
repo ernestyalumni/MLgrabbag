@@ -19,7 +19,7 @@
 \usepackage[table]{xcolor}
 \usepackage{pdfpages}
 \usepackage{tikz}
-\usetikzlibrary{matrix,arrows}
+\usetikzlibrary{matrix,arrows,backgrounds}
 
 \usepackage{multicol}
 
@@ -1496,6 +1496,60 @@ cf. 1.4 Regularized cost function
   \end{gathered}
 \]
 
+\section{Logistic Regression; "logits"}  
+
+Consider the problem of dealing with \emph{categorical} data.  I don't like the use of this name because it shouldn't be confused with category theory, or categories in category theory.  Nor should classes or types be used since they mean specific things in software design/object-oriented programming.  
+
+Nevertheless, reasonably, we should assume a finite number of "categories" or "classes", $K$.  They have no \emph{ordering} properties, despite the fact that we will soon label the classes with numbers $0,1,\dots K-1$ or $1,2,\dots K$ (complicating things is how Python and C/C++ uses so-called $0$-based counting, i.e. counting from $0$, as opposed to how we're used to $1$-based counting).  So "categorical" or "classes" labels or names belong to the category of all finite sets, $\textbf{FiniteSets}$.  
+
+The point I want to make is that in nearly all practical applications, we have to go from $\textbf{FiniteSets}$ to $\textbf{Vec}$: 
+\begin{equation}
+\begin{gathered}
+\textbf{FiniteSets} \to \textbf{Vec}   \\
+	\lbrace a_{i_1} \dots a_{i_K} \rbrace_{i_1\dots i_K \in \mathcal{I} } \to \lbrace 0,1,\dots K-1 \rbrace \to \delta_{ij}
+\end{gathered}
+\end{equation}
+
+\subsection{Negative log likelihood function, for logistic regression}
+
+cf. \href{http://deeplearning.net/tutorial/logreg.html}{Classifying MNIST digits using Logistic Regression}  
+
+Look at the code \href{http://deeplearning.net/tutorial/code/logistic_sgd.py}{logistic sgd.py}.  Look at the function \verb|negative_log_likelihood|.  The math for that is this:
+
+\begin{equation}
+            \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =
+            \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|}
+                \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
+            \ell (\theta=\{W,b\}, \mathcal{D})
+\end{equation}
+
+Consider the cost function $J$ for a deep neural network (i.e. artificial neural network) for the case of "categorical" or "discrete" data, 
+\begin{equation}
+\begin{gathered}
+	J(\mathbf{\Theta}) = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \left[ -y_k^{(i)} \log{ ((h_{\theta}(x^{(i)} ) )_k ) } - (1-y_k^{(i)} ) \log{ (1- (h_{\theta}(x^{(i)} ) )_k ) } \right] + \\
++ \frac{\lambda}{2m} \left[  \sum_{l=1}^L \sum_{j_{l-1}=0}^{s_{l-1}-1} \sum_{ j_l=0}^{ s_l-1} \left[  ( \Theta^{j_{l-1}}_{ \  \  \  j_l} )^{(l)}   \right]^2 \right] \qquad \, \text{ where } \\
+(\Theta^j_{ \  \  k} )^{(l)}  \in (\mathbb{K}^{ s_{l-1}} ) \otimes ( \mathbb{K}^{s_l} )^* \cong \text{Mat}_{\mathbb{K}}(s_{l-1},s_l)  \qquad \, \text { for } \\
+\begin{aligned}
+	& l=1,2,\dots L \\ 
+& j = 0,1,\dots s_{l-1} - 1 \\ 
+& k = 0,1,\dots s_l - 1 
+\end{aligned}
+\end{gathered}
+\end{equation}
+Now for some particular $i$, $i\in 0,1,\dots m-1$ (where $m$ is the total number of input samples, i.e. "training examples" or "batch"), 
+\[
+y^{(i)} \in \lbrace 0 ,1 \rbrace^K 
+\]
+which represents the label or "class", or so-called "category" that the data pt. belongs to.  
+
+The values that $y^{(i)}$ takes is such that if for the $i$th data sample, with it belongs specifically in "class" that's labeled $k'=0,1,\dots K-1$, then 
+\[
+y^{(i)}_k = \delta_{kk'}
+\]
+In this case, this is the so-called "1-hot vector representation."  
+
+For example, suppose $K=10$.  We have 10 different "classes" or "categories" that a data point can belong in.  For a concrete example, take a digit that could be from 0 or to 9.  For any finite set we have an isomorphism to a subset of the integers; choose $\lbrace 0 ,1,\dots K-1\rbrace$.  Then we can represent the output or "target" $y$ to either take values from $\lbrace 0 ,1,\dots K-1\rbrace$ or turn it equivalently into a vector of length $K$ of $0$s and $1$s: e.g. if the digit is 3, then we can represent $y^{(i)}$ as $[0,0,0,1,0,0,0,0,0,0]$.  In this way, we can use \emph{activation} functions such as $\tanh$, softmax, sigmoid functions, etc. to get our DNN to compute an estimate of the probability that an input example belongs to each of the "categories".    
+
 \section{Feedforward; Feedforward Propagation and Prediction}
 
 Given ordered sequence of linear transformations $L$, $L\geq 2$,
@@ -1593,7 +1647,7 @@ In fact, we obtain an ordered sequence of ``activation'' vectors:
   \end{equation}
 
 
-From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagatio<n algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
+From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagation algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
 
 Calculate
 \begin{equation}
@@ -2002,9 +2056,331 @@ Look at the parameters:
   \end{equation}
 These parameters are what you put into, in the language of \verb|theano|, for the argument value of \verb|non_sequences| of \verb|theano.scan|.  
 
+\subsection{Representation of time-dependent input and target data, i.e. when $X$ and $y$ depend on time $t$; Sequential data}
+
+Consider this representation:  
+\begin{equation}
+\begin{tikzpicture}[framed]
+  \matrix (m) [matrix of math nodes, row sep=1.25em, column sep=3em, minimum width=1em]
+  {
+	X:\lbrace 0 1,\dots T-1 \rbrace & (\mathbb{K}^d)^m    & \text{Mat}_{\mathbb{K}}(m,d) \\
+	X:t & X(t) \in (\mathbb{K}^d)^m & X(t) \in \text{Mat}_{\mathbb{K}}(m,d)  \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+	(m-1-2) edge node [above] {$$} (m-1-3)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+(m-2-2) edge node [above] {$$} (m-2-3)
+  ;
+\end{tikzpicture}
+\end{equation}
+where $T,m,d\in\mathbb{Z}^+$.  
+
+For clarification, note that $\forall \, t\in \lbrace 0 ,1,\dots T-1\rbrace$, i.e. every (discrete) time $t$, we have $m$ samples to consider: 
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=0.85em, column sep=2em, minimum width=.6em]
+  {
+	X(t) : \lbrace 0,1,\dots m -1\rbrace  & \mathbb{K}^d \\ 
+	X(t): (i) & X(t)_{(i)} \in \mathbb{K}^d \\ 
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  ;
+\end{tikzpicture}
+\]
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=0.85em, column sep=2em, minimum width=.6em]
+  {
+	X(t) : \lbrace 0,1,\dots m -1\rbrace \times \lbrace 0 ,1\dots d-1 \rbrace  & \mathbb{K}\\ 
+	X(t): (i), j & X(t)_{(i)}^j \in \mathbb{K}\\ 
+  }
+;
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  ;
+\end{tikzpicture}
+\]
+
+
+
+For Recurrent Neural Networks (RNN), RNNs have the problem of \emph{exploding gradients}: roughly speaking, 
+\[
+\text{grad}J \equiv \frac{ \partial J}{ \partial \Theta_I } \sim  ( \Theta_I)^t, \qquad \, t\in \lbrace 0 ,1,\dots T-1 \rbrace
+\]
+since for each time iteration, a factor of the weight $\Theta$ is multiplied.  
+
+So for the exploding gradient problem, if $\| \Theta_I \| >1$, after $t>1$, the gradient grows; if $\| \Theta_I \| <1$, after $t>1$, gradient goes to $0$, and so long term memories ($t \gg 1$), aren't included: LSTM gradient cannot go to $0$.  
+
+In presenting the definition of Long-Short Term Memory (LSTM), I will present various notation used as even Jozefowicz, Zaremba, and Sutskever \cite{JZS2015} even says different notation is used by practitioners.  They denoted the following:  
+\begin{equation}
+\begin{aligned}
+	& i_t = \tanh{(W_{xi} X_t + W_{hi} h_{t-1} + b_i )}  \\
+	& j_t = \text{sigm}{(W_{xj} X_t + W_{hj} h_{t-1} + b_j )}  \\
+	& f_t = \text{sigm}{(W_{xf} X_t + W_{hf} h_{t-1} + b_f )}  \\
+	& o_t = \tanh{(W_{xo} X_t + W_{ho} h_{t-1} + b_o )}  \\
+	& c_t =  c_{t-1}\otimes f_t + i_t \otimes j_t  \\
+	& h_t = \tanh{ (c_t)}\otimes o_t  
+\end{aligned}
+\end{equation}
+
+
+
+Jozefowicz, Zaremba, and Sutskever \cite{JZS2015}.  
+
+Bengio, et. al. \cite{GBC2016}
+
+
+
 \subsection{How to choose the number of hidden layers and nodes in a neural net}
 
 
+\part{Convolutional Neural Networks (CNN); CNN, higher-rank tensors}
+
+
+
+\subsection*{Convolution}
+define \textbf{convolution} of $f,g$ on $\mathbb{R}^n$
+\begin{definition}
+	\begin{equation}  f* g(x) = \int_{ \mathbb{R}^n } f(x-y)g(y)dy \end{equation}
+\end{definition}
+Note $f*g = g*f$ by change of variables.  
+Now
+\[
+\begin{gathered}
+y(t) = \int_{-\infty}^{\infty}x(\tau)h(t-\tau)d\tau = \int_{-\infty}^{\infty} d\tau \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) e^{i\omega \tau} d\omega h(t-\tau) e^{-i \omega t} e^{-\omega t} = \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) \widehat{h}(\omega) e^{i\omega t} d\omega \\ 
+\Longrightarrow \widehat{y}(\omega) = \widehat{x}(\omega) \widehat{h}(\omega)
+\end{gathered}
+\]
+Discrete case: if $f,g$ are \emph{discrete}, i.e. $\begin{aligned} & \quad \\
+& f = f(i) \\
+& g = g(j) \end{aligned}$, $i,j \in \mathbb{Z}$, then
+\[
+\int_{-\infty}^{\infty} dy f(x-y)g(y) = \sum_{k=-\infty}^{\infty} f(n-k) g(k) = (f*g)(n)
+\]
+\section{Images, and generalization of Images as multilinear mappings; Convolution by a filter (stencil $c$)}
+Given image of size $L_x \times L_y$, i.e. $(L_x,L_y)\in ( \mathbb{Z}^+)^2$.  An image really is a "designated" or "particular," "fixed" mapping $f$.  
+\[
+\begin{gathered}
+f: \lbrace 0 , \dots L_x- 1\rbrace \times \lbrace 0 \dots L_y-1 \rbrace \to \lbrace 0 \dots 255 \rbrace^4 \\ 
+f(x,y) = (f^{(r)}(x,y), f^{(b)}(x,y), f^{(g)}(x,y), f^{(\alpha)}(x,y))
+\end{gathered}
+\]
+Note that $f$ consists of the usual 4 "channels" for rgb color with $\alpha$ denoting "hue."  
+Generalize this to the following multilinear mapping:  
+with size dimensions $L_1 \times L_2 \times \dots \times L_d, (L_1, L_2 \dots L_d)\in (\mathbb{Z}^+)^d$, 
+\begin{equation}
+\begin{gathered}
+f: \lbrace 0 \dots L_1 - 1 \rbrace \times  \lbrace 0 \dots L_2 - 1 \rbrace \times \dots \times  \lbrace 0 \dots L_d - 1 \rbrace \to \mathbb{K}^C ; \qquad \, C\in \mathbb{Z}^+ , \, \mathbb{K} = \mathbb{R} \text{ or } \mathbb{Z} \\ 
+f(x_1,x_2 \dots x_d) = (f^{(1)}(x_1,x_2,\dots x_d), f^{(2)}(x_1,x_2,\dots x_d), \dots f^{(C)}(x_1,x_2,\dots x_d) )
+\end{gathered}
+\end{equation}
+\subsection{Filter (stencil) $c$ }
+For the filter (i.e. stencil) $c$, stipulate that $W$'s are odd, (the letter $W$ denote stencil width or filter width).  
+\[
+\begin{gathered}
+	(\nu_x,\nu_y) \in \lbrace 0 \dots W_x-1\rbrace \times \lbrace 0 \dots W_y-1 \rbrace \\
+	c : \lbrace 0 , \dots W_x -1\rbrace \times \lbrace 0, \dots W_y-1 \rbrace \to (\mathbb{K})^C  \\
+	c(\nu_x,\nu_y) \mapsto c(\nu_x,\nu_y)=(c^{(1)}(\nu_x,\nu_y),c^{(2)}(\nu_x,\nu_y), \dots c^{(C)}(\nu_x,\nu_y)) 
+\end{gathered}
+\]
+In general, 
+\begin{equation}
+\begin{gathered}
+	(\nu_1, \nu_2 \dots \nu_d) \in \lbrace 0 , \dots , W_1-1 \rbrace \times \lbrace 0 , \dots , W_2-1 \rbrace \times \dots \times \lbrace 0 , \dots , W_d-1 \rbrace   \\
+	c: \lbrace 0 , \dots W_1 - 1 \rbrace \times \dots \times \lbrace 0 , \dots W_d - 1 \rbrace \to (\mathbb{K})^C  \\
+	c(\nu_1 , \nu_2 \dots \nu_d) \mapsto (c^{(1)}(\nu_1 , \dots \nu_d) ,\dots c^{(C)}(\nu_1 \dots \nu_d) )
+\end{gathered}
+\end{equation}
+This filter (stencil) operation, $c\in L(\lbrace 0 \dots W_1 - 1\rbrace \times \dots \times \lbrace 0 ,\dots W_d - 1\rbrace , (\mathbb{K})^C)$, can be isomorphically mapped to a "matrix" or "tensor" of values (but we can only say that it gets mapped into elements in the space of the Cartesian product of vector spaces $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2} \times \dots \times (\mathbb{K}^C)^{W_d} \equiv (\mathbb{K}^C)^{W_1 W_2 \dots W_d}$.  We cannot say that it gets mapped to a tensor.  We need to require that this Cartesian product have an equivalence relation be "quotient"-ed out.  For example, if for $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2}$, the equivalence relation is of the form $(v_1 + v_2,w) - (v_1,w) - (v_2,w), (v,w_1+w_2)-(v,w_1)-(v,w_2), c(v,w)-(cv,w), c(v,w)-(v,cw)$, $\forall \, v_1,v_2,v \in (\mathbb{K}^C)^{W_1}$, $\forall \, w_1,w_2,w \in (\mathbb{K}^C)^{W_2}$, $c\in \mathbb{K}$.  We must take the quotient according to this equivalence relation.  Then we need to check if this produces the universality property of tensors in the view point of category theory).  
+For the sake of notation, since surely $W_i$ is an odd number, then $\forall \, i = 1\dots d$, $W_i = 2h_i + 1$, $h_i \in \mathbb{Z}^+$.  Division with integers yields the "floor."  Keep that mind in the notation of $W_i/2$.  
+Then consider the \emph{discrete convolution} $g=c*f$: 
+\begin{equation}\label{Eq:DiscreteConvolution}
+\begin{gathered}
+g^{(\alpha)}(i_1, i_2 \dots i_d) = \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
+\end{gathered}
+\end{equation}
+For the $d=2$ case, 
+\[
+\begin{gathered}
+g^{(\alpha)}(i,j) = \sum_{\nu_1=0}^{W_1-1}\sum_{\nu_2=0}^{W_2-1} c^{(\alpha)}(\nu_1, \nu_2)f^{(\alpha)}(i+\nu_1 - h_1, j +\nu_2 - h_2)
+\end{gathered}
+\]
+Unless there were specified boundary conditions, observe that for $g$, 
+\[
+\begin{gathered}
+h_1 \leq i_1 \leq L_1 - 1 - h_1 \\
+h_2 \leq i_2 \leq L_2 - 1 - h_2 \\
+\vdots \\ 
+h_d \leq i_d \leq L_d - 1 - h_d \\
+\end{gathered}
+\]
+and so observe that unless boundary conditions for $f$ is specified with additional assumptions, 
+\begin{equation}
+g:\lbrace 0 \dots L_1 -1 - 2h_1 \rbrace \times \lbrace 0 \dots L_2 -1 - 2h_2 \rbrace \times \dots \times \lbrace 0 \dots L_d -1 - 2h_d \rbrace  \to \mathbb{K}^C
+\end{equation}
+$g$ is "smaller" than $f$ by $\frac{W_1}{2} , \frac{W_2}{2} \dots \frac{W_d}{2}$ in each of dims. $f$ "shrank" to.  
+\section{Convolution Axon}
+Recall the $l$th axon of the deep neural network (DNN), which consists of the $l-1$th layer, $a^{(l-1)}$ which is the "input" of this axon and the $l$th layer, $a^{(l)}$ the "output" of this axon.  Others call this the "fully-connected layer."  
+\begin{equation}
+\begin{tikzpicture}[framed]
+\matrix (m) [matrix of math nodes, row sep=2.1em, column sep=4em, minimum width=1.5em]
+{
+	\text{\textbf{Mod}}_{R^{(l-1)}} & \text{\textbf{Mod}}_{R^{(l)}}  & \text{\textbf{Mod}}_{R^{(l)}} \\
+	(\mathbb{K}^{s_{l-1}})^m  & (\mathbb{K}^{s_l})^m & ( \mathbb{K}^{s_l})^m  \\ 
+	a^{(l-1)}  & z^{(l)} & a^{(l)} \\ 
+};
+\path[->]
+(m-1-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-1-2)
+(m-1-2) edge node [above] {$ \psi^{(l)} \odot $} (m-1-3)
+;
+\path[->]
+(m-2-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-2-2)
+(m-2-2) edge node [above] {$ \psi^{(l)} \odot $} (m-2-3)
+;
+\path[|->]
+(m-3-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-3-2)
+(m-3-2) edge node [above] {$ \psi^{(l)} \odot $} (m-3-3)
+;
+\end{tikzpicture} 
+\end{equation}
+with 
+\begin{equation}
+\begin{gathered}
+\begin{gathered}
+z^{(l)} := a^{(l-1)} \Theta^{(l)} + b^{(l)} \\
+(z^{(l)})_j = (a^{(l+1)})_{\mu} \Theta^{\mu}_{\ \  j}
+\end{gathered} \qquad \, \\ 
+\text{ e.g. } \Theta^{\mu}_{ \ \  j} \in ( \text{Mat}_{\mathbb{K}}(m,s_{l-1}) )^* \otimes \text{Mat}_{\mathbb{K}}(m,s_l) \cong \text{Mat}_{\mathbb{K}}(s_{l-1},s_l)\\
+a^l := \psi^{(l)}(z^{(l)})
+\end{gathered}
+\end{equation}
+Consider again a single "generalized image", as a given element in the space of linear mappings $L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right)$:  
+\begin{equation}
+\begin{gathered}
+L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right) \ni \\
+\ni (f^{(1)}(x_1,x_2 \dots x_d), f^{(2)}(x_1,x_2 \dots x_d) , \dots f^{(C)}(x_1,x_2 \dots x_d)) \equiv (f^{(1)}),f^{(2)}, \dots f^{(C)} )(x_1,x_2 \dots x_d)
+\end{gathered}
+\end{equation}
+For example, for the case of $d=2$, $C=1$, then we have a \emph{grayscale image} of size dimensions $L_1 \equiv H$, $L_2 \equiv W$ (with $H$, $W$ denoting height and width of an image, respectively).  Then 
+\[
+L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}) \ni f(x_1,x_2)
+\]
+e.g. $d=2,C=3$, rgb image (of 3 "channels"):
+\[
+\begin{gathered}
+L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}^3) \ni f(x_1,x_2) = \\
+(f^{(r)}(x_1,x_2),f^{(g)}(x_1,x_2),f^{(b)}(x_1,x_2)) = (f^{(r)}, f^{(g)},f^{(b)})(x_1,x_2)
+\end{gathered}
+\]
+Then, as a warm-up, consider the convolution of this single image with a filter (stencil) $c$, as given with Eq. \ref{Eq:DiscreteConvolution}:
+\[
+\begin{gathered}
+g^{(\alpha)}(i_1,i_2 \dots i_d) = \\
+= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
+\end{gathered}
+\]
+But we really want to consider $m$ total samples/examples, concurrently.  Let us, for notation, index these samples/examples by $i_m = 0,1,\dots m-1$.  
+Also, consider as a change of notation, where we index the components of $c$ and $f$ to be a subscript, as opposed to being a superscript, before:
+\begin{equation}
+\begin{gathered}
+L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C) \ni \\
+\ni (f_1,f_2 \dots f_C)(x_1,x_2 \dots x_d) = (f_1(x_1,x_2 \dots x_d), f_2(x_1\dots x_d), \dots f_C(x_1 \dots x_d))
+\end{gathered}
+\end{equation}
+Then consider the "convolution input layer" to be an element in $ (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m$: 
+\begin{equation}
+ (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m \cong \left( \otimes_{\alpha=1}^C (\otimes_{i=1}^d \mathbb{K}^{L_1}) \right)^m
+\end{equation}
+Recall again the filter (stencil) $c$, 
+\begin{equation}
+\begin{gathered}
+c: \otimes_{i=1}^d \lbrace 0 ,1,\dots W_i -1\rbrace \to (\mathbb{K})^C  \\
+c(\nu_1, \nu_2 ,\dots \nu_d) \mapsto (c_1,c_2, \dots c_C)(\nu_1\dots \nu_d) 
+\end{gathered}
+\end{equation}
+\begin{equation}
+\begin{gathered}
+f*c = (f*c)_{\alpha}^{(i_m)}(i_1,\dots i_d) = \\
+= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} f_{\alpha}^{(i_m)}(i_1 + \nu_1 - \frac{W_1}{2}, i_2 + \nu_2 - \frac{W_{\alpha}}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) c_{\alpha}(\nu_1 \dots \nu_d)
+\end{gathered}
+\end{equation}
+Consider a bias, $b$, as a $R$-module, 
+\[
+b \in \left( L (\otimes_{i=1}^d \lbrace 0 ,1, \dots L_i - 1 - 2h_i \rbrace , \mathbb{K}^C) \right)^m
+\]
+which is "broadcasted" or "copied" $m$ times.  
+We can also rewrite this as the following:
+\[
+\left( \otimes_{i=1}^d ( \mathbb{K}^C)^{L_i - 2h_i} \right)^m  
+\]
+The Convolution axon (or what others call convolution layer) is in a sense a higher-rank generalization of the DNN axon.  
+cf. \href{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}{David Stutz's Seminar Report "Understanding Convolutional Neural Networks (2014)}, \url{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}
+
+
+
+%Consider discrete convolution; $g=c*f$  
+
+%\begin{equation}
+%\begin{aligned}
+%	g^{(\alpha)}(i_1,i_2 \dots i_d) = \sum_{\nu_1=0}^{W_1-1}\sum_{\nu_2=0}^{W_2-1}  \dots \sum_{\nu_d=0}^{W_d-1}  c^{(\alpha)}(\nu_1 \dots \nu_d )f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2} , \dots i_d + \nu_d - \frac{W_d}{2} )   \\
+%\text{ e.g. } g^{(\alpha)}(i,j) = \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1}  c^{(\alpha)}( \nu_1 , \nu_2) f^{(\alpha)}(i+\nu_1- h_1 , j+%\nu_2 -h_2)  
+%\end{aligned}
+%\end{equation}
+
+%Unless there were specified boundary conditions, observe that for $g$, 
+%\begin{equation}
+%\begin{aligned}
+%	& h_1 \leq i_1 \leq L_1 - 1 -h_1 \\ 
+%	& h_2 \leq i_2 \leq L_2 - 1 -h_2 \\ 
+%	& \vdots 
+%	& h_d \leq i_d \leq L_d-1 -h_d 
+%\end{aligned}
+%\end{equation}
+%and so we observe that, unless boundary conditions for $f$ are specified, with additional assumptions, 
+%\[
+%g: \lbrace 0 \dots L_1 - 1 -2h_1 \rbrace \times \lbrace  0 \dots L_2 - 1 -2h_2 \rbrace \times \dots \times \lbrace 0 , \dots L_d-1 - 2h_d \rbrace \to \mathbb{K}^C
+%\]
+%$g$ is "smaller" than $f$ by $\frac{W_1}{2} , \frac{W_2}{2} \dots \frac{W_d}{2} $ in each of dims. $f$
+
+\begin{equation}
+\begin{gathered}
+a_l  = \psi_l \odot ( a_{l-1} * c + b_l ) \text{ with } 
+	a_{l-1} \in ( L \left( \bigotimes_{i=1}^d \lbrace 0\dots L_i -1 \rbrace, \mathbb{K}^{C_l-1}  \right) )^m \mapsto ( L \left( \bigotimes_{i=1}^d \lbrace 0\dots L_i -2h_i-1 \rbrace, \mathbb{K}^{C_l-1}  \right) )^m
+\end{gathered}
+\end{equation}
+
+\subsection{Max-pooling}  
+
+\begin{equation}
+\begin{gathered}
+	x \in L(\bigotimes_{i=1}^d \lbrace 0 \dots L_i - 1\rbrace ,\mathbb{K} ) \mapsto y \in L(\bigotimes_{i=1}^d \lbrace 0 \dots L_i /P_i - 1\rbrace ,\mathbb{K} )   \text{ where } \\
+y(i_1\dots i_d) = \max_{ \substack{ \nu_1 = 0 \dots P_1 - 1 \\ \vdots \\ \nu_d = 0 \dots P_d-1 } } x(i_1 - \nu_1 - \frac{P_1}{2} , \dots i_d - \nu_d - \frac{P_d}{2} )
+\end{gathered}
+\end{equation}
+
+Here are the necessary (and all) dimensions that have to be provided to define completely the convolution axon, and its respective "name" in \verb|theano|:  
+
+\begin{equation}
+\begin{aligned}
+\text{ dimensions } & \text{ what theano calls it } \\ 
+(C_{l-1}, C_l) \in (\mathbb{Z}^+)^2 & \text{ feature map } \\ 
+(W_1 \dots W_d) \in (\mathbb{Z}^+)^d & \text{ filter shape }  \\
+(P_1 \dots P_d) \in (\mathbb{Z}^+)^d & \text{ pool size  }  \\ 
+(L_1 \dots L_d) \in (\mathbb{Z}^+)^d & \text{ image size }  \\
+\end{aligned}
+\end{equation}
+
+EY : 20170807 My question is if max-pooling should be its own "layer" or should be done or included with, after, every convolution.  (?,???)
 
 \part{Support Vector Machines (SVM)}
 
@@ -2974,6 +3350,39 @@ X^{(i)}  & a^{(L)} \\
 
 \url{https://stackoverflow.com/questions/25315566/unicodedecodeerror-in-nltks-word-tokenize-despite-i-forced-the-encoding}
 
+\section{TextRank}
+
+\href{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}{TextRank: Bringing Order into Texts, Rada Mihalcea and Paul Tarau}
+
+Mihalcea and Tarau \cite{MiTa}.  
+
+Let $G=(V,E)$ be a directed graph with set of vertices $V$, set of edges $E$, $E\subset V \times V$.  
+
+$\forall \, $ given vertex $V_i$, let $\text{In}(V_i) \subset V \equiv $ set of vertices that point to it $\equiv $ "predecessors", \\
+let $\text{Out}(V_i) \subset V \equiv $ set of vertices that vertex $V_i$ points to "successors"
+
+Let score $S:V \to \mathbb{R}$, 
+\begin{equation}
+ S(V_i) := (1-d) + d \sum_{j\in \text{In}(V_i) } \frac{1}{ (\text{Out}(V_j))} S(V_j)
+\end{equation}
+where $0\leq d\leq 1$.  
+
+Usually $d=0.85$.  
+
+Let $t\in \mathbb{Z}^+$.  Let $t=0$.  $\forall \, V_i \in V$, $S(V_i)(t=0) \in \mathbb{R}$, randomly assigned.  
+
+Weighted graphs.  
+\begin{equation}
+WS(V_i) = (1-d) + d* \sum_{V_j \in \text{In}(V_i) } \frac{w_{ji} }{ \sum_{V_k \in \text{Out}(V_j) } w_{jk} } WS(V_j)
+\end{equation}
+
+$0\leq w_{ij} \leq 10$  
+
+\subsection{Keyword Extraction}
+
+2 vertices \emph{connected} if corresponding lexical units co-occur within window of max. $N$ words.  $2\leq N \leq 10$.  
+
+\href{http://www.aclweb.org/anthology/I13-1062}{Topic Ranking}
 
 
 
@@ -2991,9 +3400,304 @@ Recurrent neural network - creates an internal state of the network which allows
 ``In sum, for most problems, one could probably get decent performance (even without a second optimization step) by setting the hidden layer configuration using just two rules: (i) number of hidden layers equals one; and (ii) the number of neurons in that layer is the mean of the neurons in the input and output layers.''
 
 
-https://www.quora.com/Natural-Language-Processing-What-are-algorithms-for-auto-summarize-text
+\url{https://www.quora.com/Natural-Language-Processing-What-are-algorithms-for-auto-summarize-text}
 
-https://arxiv.org/pdf/1602.03606.pdf
+\url{https://arxiv.org/pdf/1602.03606.pdf}
+
+
+\part{Unsupervised Learning}
+
+\section{$k$-means clustering algorithm}
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/93VPG/k-means-algorithm}{Coursera Machine Learning (Ng), Week 8, K-Means Algorithm}
+
+\url{https://ocw.tudelft.nl/wp-content/uploads/Algoritmiek_Clustering.pdf}
+
+\url{https://github.com/serban/kmeans/blob/master/cuda_kmeans.cu}
+
+\section{PageRank}  
+
+cf. Gleich (2015) \cite{Glei2015}
+
+Let $i=1,2\dots N$; $N=$ total number of "states".  If "states" are represented as vertices $v_i \in V \in \mathbf{\text{(Finite)Set}}$, then $i$ are some choice of labels for $v_i$'s.  
+
+Let $P_{ij} :=$ probability of transitioning from $j$ to $i$.  
+
+Clearly $P(i) \equiv $ probability of state $i$ in next iteration $=P_{ij}P(j)$.  
+
+Let $\mathbf{v}:\lbrace 1,2, \dots N \rbrace \to \mathbb{R}$, $0\leq \mathbf{v}(i) \leq 1$.  
+
+$\mathbf{v}(i) = $ (normalized) "probability" (likelihood) $i \in \lbrace 1,2, \dots N \rbrace$ of \emph{teleportation distribution} of randomly transitioning or teleporting for state $i$.  
+
+Note that this $\mathbf{v}$ is also represented as vector:
+\[
+\mathbf{v} \xrightarrow{ \text{ vectorize } } \mathbf{v} \in \mathbb{R}^N
+\]
+$\alpha \in \mathbb{R}^+$, $0\leq \alpha \leq 1$ is a tuned parameter.  
+
+Then Gleich considers this as the (vectorized) PageRank algorithm:
+\begin{equation}
+\alpha P_{ij}x_j + (1-\alpha) v_i =0 
+\end{equation}
+with $\mathbf{x}$ being what Gleich denotes as the PageRank vector.  
+
+So in Gleich's notation, 
+\begin{equation}
+(\alpha \mathbf{P} + (1-\alpha)\mathbf{v} \mathbf{e}^T )\mathbf{x} = \mathbf{x}  \text{ or } ( \mathbf{1} - \alpha \mathbf{P}) \mathbf{x} = (1-\alpha) \mathbf{v}
+\end{equation}
+cf. Eq. (2.1) and (2.2) of Gleich (2015) \cite{Glei2015}, respectively.  
+
+Following Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}, and their notation now:
+
+let $u$ be a webpage.  $u \equiv x \in X$, where $X$ is a set (that could represent the set of vertices $X$).  Let $Y = $ set of all edges of this graph.  
+
+Let $F_u := $ set of pages that $u$ points to, i.e. 
+\begin{equation}
+F_u = \lbrace x | x\in X, \begin{aligned} & u = o(y) \\
+& x = t(y) \end{aligned} \text{ for some } y \in Y \rbrace 
+\end{equation}
+
+Let $B_u : = $ set of pages that point to $u$, i.e. 
+\begin{equation}
+	B_u = \lbrace x | x\in X, \begin{aligned} & x = o(y) \\
+	& u= t(y) \end{aligned} \text{ for some } y\in Y \rbrace 
+\end{equation}
+$N_u = |F_u| = $ number of links from $u$.  Let $c\in \mathbb{R}$ normalization factor (so total rank of all webpages constant).  
+
+Define simple ranking $R$, 
+\begin{equation}
+\begin{aligned}
+& R:X \to \mathbb{R}  \\
+& R(u) = c\sum_{ v\in B_u } \frac{R(v) }{N_v}
+\end{aligned}
+\end{equation}
+
+Consider 
+\[
+\begin{gathered}
+\sum_{u \in X} R(u) = c\sum_{u \in X} \sum_{v\in B_u} \frac{R(v) }{ N_v} \Longrightarrow \frac{ \sum_{u\in X} R(u)}{ \sum_{u\in X} \sum_{ v\in B_u } \frac{R(v)}{N_v} } = c   \\
+	c=\frac{R(u)}{ \sum_{v\in B_u } \frac{R(v) }{ N_v} }
+\end{gathered}
+\]
+
+Consider $u \in X$.  $\forall \, v \in B_u$, $N_v \geq 1$ (since connected graph \textbf{must} be connected, by definition).  
+
+$c<1$ since there's the case of $F_u = \emptyset$ and "their weight is lost from system (cf. Sec. 2.7 of Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998})".  
+
+There's a problem if we have the case of circuits of size $n=1$, $n=2$.  To overcome existence of circuits (rank sinks), 
+\begin{definition}
+	Let $E(u) := $ source of ranks.  
+	
+	$R' \equiv $ PageRank, 
+	\begin{equation}
+	\begin{aligned}
+	& R' : X\to \mathbb{R}  \\
+	& R'(u) = c\sum_{v\in B_u } \frac{R'(v)}{N_v} + cE(u)
+	\end{aligned}
+	\end{equation}
+s.t. $c$ maximized, $\| R' \|_1 = 1$ ( $\| R' \|_1$ denotes the $L_1$ norm of $R'$)	
+\end{definition}
+
+Generalizing this, for $A_{uv} \equiv $ "likelihood of transition \textbf{from} $v$ \textbf{to } $u$, so that $A_{uv} = \frac{1}{N_v}$ for this special case.  
+
+\[
+R'(u) = c\sum_{v\in B_u } A_{uv} R'(v) + cE(u)
+\]
+Both Page, Brin, Motwani, and Winograd and Gleich rewrites this as 
+\[
+R' = c(A + E\mathbf{e}^T)R'
+\]
+with $\mathbf{e}$ being a column of $1$'s.  
+
+Indeed, 
+\[
+E_{i1} (\mathbf{e}^T)_{1k} R'_{k1} = E_{i1} \| R' \|_1 = E_{i1} 
+\]
+since $\| R' \|_1=1$ by (defined) normalization.  
+
+$E$ is a user-defined parameter, possibly uniform $\forall \, u \in X$.  
+\begin{equation}
+R'(u) - c\sum_{v\in B_u} A_{uv} R'(v) = cE(u)
+\end{equation}
+
+\subsubsection{PageRank algorithm by Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}}
+	
+cf. 12.6 \emph{Computing Page Rank}, pp. 6 of Page, Brin, Motwani, and Winograd (1998) \cite{PBMW1998}.  
+
+Let $S$ be almost any vector over $X$; $\begin{aligned} & \quad \\
+	& S:X \to \mathbb{R} \\
+	& S(u) \geq 0 \end{aligned}$, \, (e.g. $E$).  Then, for iterations $t= 0,1,\dots \in \mathbb{Z}^+$, 
+and so for 
+\[
+R: X \times \mathbb{Z}^+ \to \mathbb{R}
+\]
+Then 
+\[
+\begin{gathered}
+R(u,0) \equiv R_0(u) = S(u)  \qquad \, (R_0 \leftarrow  S)
+\end{gathered}
+\]
+
+$ \forall \, t \in \mathbb{Z}^+, \,$ 
+\[
+\begin{gathered}
+	 \forall \, u \in X, \, R(u,t+1) = A_{uv} R(v,t)  \\
+	d= ( \| R(u,t) \|_1 - \| R(u,t+1) \|_1 ) \\
+	R(u,t+1) = R(u,t+1)+dE \\
+	\delta = \| R(u,t+1) - R(u,t) \|_1 
+\end{gathered}
+\]
+while $\delta > \epsilon$.  
+
+Compare this to the iteration by Gleich (2015) \cite{Glei2015}: 
+\begin{equation}
+\mathbf{x}^{(k+1)} = \alpha \mathbf{P} \mathbf{x}^{(k)} + (1-\alpha) \mathbf{v} 
+\end{equation}
+where
+\[
+\mathbf{x}^{(0)} = \mathbf{v} \text{ or } \mathbf{x}^{(0)} = 0
+\]
+
+Indeed, 
+\begin{equation}
+\begin{gathered}
+R(u) - R(u;t+1) = (\alpha A_{uv} R(v) + (1-\alpha) E) - ( \alpha A_{uv} R(v,t) + (1-\alpha ) E) = \alpha A_{uv}(R(v) - R(v,t) )
+\end{gathered}
+\end{equation}
+Indeed, $R(u,t)$ converges to $R(u)$.  
+
+\subsubsection{PageRank Vector Iteration Implementation \cite{TUMHPC2016}}
+
+cf. Nov. 14. Dwarf No. 2 - Sparse Linear Algebra lecture by Dr. Bader \cite{TUMHPC2016}, \url{http://www5.in.tum.de/lehre/vorlesungen/hpc/WS16/sparseLA.pdf}  
+
+Define 
+\begin{equation}
+	A_{ij} \in \text{Mat}_{\mathbb{R}}(N,N) 
+\end{equation}
+where $N=$ total number of webpages (vertices) $= |X|$, with $A_{ij}$ defined as 
+\begin{equation} 
+A_{ij} = \begin{cases} 
+1 & \text{ if $ \exists \, $ edge $ y \in Y$ \textbf{ from } $j$ \textbf{ to } $i$ (i.e. $\exists \, y \in Y$ s.t. $\begin{aligned} & \quad \\ & o(y) = x_j \\ & t(y) = x_i \end{aligned}$ } ) \\
+0 & \text{ otherwise } \end{cases}   
+\end{equation}
+with 
+\begin{equation}
+N_j = \sum_{i=1}^N A_{ij} = \text{ total number of links from $j$th webpage (vertex) } = |F_j |
+\end{equation}
+and so \emph{define} $B_{ij}$
+\begin{equation}
+\begin{aligned}
+	& B_{ij} \in \text{Mat}_{\mathbb{R}}(N,N) \\ 
+	& B_{ij} := \frac{1}{N_j} A_{ij}
+\end{aligned}
+\end{equation}
+
+Compute PageRank vector via vector iteration 
+\begin{equation}
+\begin{gathered} 
+\mathbf{x}^{(m)} = \alpha B \mathbf{x}^{(m-1)} + (1-\alpha) \frac{1}{N} \mathbf{e} \text{i.e. }  \\
+R(u;t+1) = \alpha B_{uv} R(v;t) + (1-\alpha ) E(u)
+\end{gathered}
+\end{equation}
+
+$B$ is a sparse matrix, so use SpMV, i.e. sparse matrix vector multiplication.  
+
+Now, we should talk about \emph{Sparse Linear Algebra}.  
+
+\section{Data Structures for Sparse Matrices}  
+
+cf. Part II: Data Structures for Sparse Matrices in Nov. 14. Dwarf No. 2 - Sparse Linear Algebra lecture by Dr. Bader \cite{TUMHPC2016}, \url{http://www5.in.tum.de/lehre/vorlesungen/hpc/WS16/sparseLA.pdf}.  
+
+\subsection{Coordinate Scheme (aka Triple Scheme) }
+
+We want
+\begin{equation}
+\begin{gathered}
+A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i,N_j) \mapsto (a_{ij},i,j)\mathbb{F}  \times \mathbb{Z}^+ \times \mathbb{Z}^+
+\end{gathered}
+\end{equation}
+Let $K \in \mathbb{Z}^+ = $ total number of \textbf{nonzero} entries in $A_{ij}$.  
+
+The coordinate scheme is implemented either as an array of struct (of size $K$), i.e. 
+\begin{equation}
+\begin{aligned}
+& M:\mathbb{Z}^+ \to \mathbb{F} \times \mathbb{Z}^+ \times \mathbb{Z}^+ \\
+& M(I) = (A(I), i(I), j(I) )
+\end{aligned}
+\end{equation}
+or struct of array, i.e. 
+\begin{equation}
+	\begin{gathered}
+	A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i,N_j) \mapsto M \in (\mathbb{Z}^+ \to \mathbb{F}) \times ( \mathbb{Z^+} \times \mathbb{Z}^+)^2 \text{ with } \\
+	M_1(I) = A(I) , M_2(I) = i(I), M_3(I) = j(I)
+	\end{gathered}
+\end{equation}
+used, e.g. in Matlab, or as input format (format to input in ).  Note also that it's possibly not sorted, i.e. $i=i(I), j= j(I)$ may not follow any lexicographic order, depending on $I$.  
+
+\subsection{Compressed Row Storage (CRS)  }
+
+2 arrays of size $K$ with $a_{ij}$ and $j$, i.e. consider $a: \lbrace 1, 2 , \dots K \rbrace \to \mathbb{F}$.  
+
+\begin{equation}
+\begin{gathered}
+A_{ij} \in \text{Mat}_{\mathbb{F}}(N_i , N_j) \mapsto \begin{aligned} 
+	& a:\lbrace 1,2, \dots K \rbrace \to \mathbb{F}, \, \\ 
+	& j : \lbrace 1,2, \dots K \rbrace \to \mathbb{Z}^+ , \, \\
+	& IA: \lbrace 0 ,1,\dots N_i \rbrace \to \mathbb{Z}^+ \in \text{Hom}(\mathbb{Z}^+,\mathbb{F}), \text{Hom}(\mathbb{Z}^+,\mathbb{Z}^+)^2
+\end{aligned}
+\end{gathered}
+\end{equation}
+
+Note that we are using left-to-right, top-to-bottom "row-major" order, which is amenable to so-called (thread) warp coalescing for memory usage/optimization in CUDA C/C++.  
+
+So, to reiterate, we have \\
+$a(k) = a_{ij}$ for some surjective $(i,j) ]\mapsto k$ \\
+$j(k) \in \mathbb{Z}^+$ 
+\[
+IA(i) = \begin{cases}0  & \text{ if } i = 0 \\
+& IA(i-1) + (\text{number of nonzero elements of $(i-1)$th row in original matrix}) \end{cases}
+\]
+Let's take a look at $IA: \lbrace 0,1,\dots N_i \rbrace \to \mathbb{Z}^+$ in greater detail.  Consider these simple cases:  \\
+$IA(0)= 0$ \\
+$IA(i) = IA(i-1) + (\text{number of nonzero elements of $(i-1)$th row in original matrix, with $i=0,1,\dots N_i-1$, in this particular case)}$
+
+And so 
+\[
+IA(1) = 0+\text{number of nonzero elements of $0$th row in original matrix}
+\]
+(we started counting from $0$ in this case, \textbf{not} from $1$).  
+
+\[
+IA(2) = IA(1)+\text{number of nonzero elements of "$1$th" row in original matrix}
+\]
+(or "second" row, counting from, starting from $1$) 
+
+Clearly $IA(N_i)=K$ since 
+\[
+IA(i) = \sum_{l=0}^{i-1} (\text{number of nonzero elements in $l$th row ($0$-based country; $l=0,1,\dots N_i-1$)})
+\]
+For $1$-based counting (i.e. row $=1,2,\dots N_i$), 
+\begin{equation}
+IA(i) = \begin{cases} 0 & \text{ if } i=0 \\
+ \sum_{l=1}^i (\text{number of nonzero elements in $l$th row}) & \end{cases}
+\end{equation}
+and so for 
+\[
+(i,j ) \in \lbrace 1,2, \dots N_i \rbrace \times \lbrace 1,2, \dots N_j \rbrace \mapsto IA(i-1) + j = k \in \lbrace 1,2, \dots K \rbrace 
+\]
+\[
+A_{ij}x_j = a(IA(i-1+j))x_j(j(k))
+\]
+
+\subsection{ELLPACK Format}
+
+$\forall \, i \in \lbrace 1, 2, \dots N_i \rbrace$, let number of nonzero elements in $i$th row $\leq K_{\text{max}}$.  
+
+Then consider storing values in $a_{ik} \in \text{Mat}_{\mathbb{F}}(N_i,K_{\text{max}})$.  
+
+Store column indices $j\in \lbrace 1,2, \dots N_j \rbrace$ (notice "$1$-based counting") in $j\in \text{Mat}_{\mathbb{F}}(N_i,K_{\text{max}})$.  
+
+$j_{ik} =0$ if there is $0$ entry for $A_{ij}=0$.  
 
 
 
@@ -3028,6 +3732,16 @@ Kurt Hornik. ``Approximation Capabilities of Muitilayer Feedforward Networks.'' 
 
 \bibitem{HSW1989}
 Kurt Hornik. Maxwell Stinchcombe and Halbert White.  ``Multilayer Feedforward Networks are Universal Approximators.''  \textbf{Neural Networks}, Vol. 2, pp. 359-366, 1989.  
+
+
+\bibitem{JZS2015}
+Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever.  "An Empirical Exploration of Recurrent Network Architectures."  \emph{Proceedings of the 32 nd International Conference on Machine Learning}, Lille, France, 2015. JMLR: W\&CP volume 37.
+
+\bibitem{GBC2016}
+Ian Goodfellow, Yoshua Bengio, and Aaron Courville.  \textbf{Deep Learning} (Adaptive Computation and Machine Learning series).  The MIT Press (November 18, 2016).  
+
+
+
 
 \bibitem{Nowa2008}
 Thomas Nowak.  ``Implementation and Evaluation of a Support Vector Machine on an 8-bit Microcontroller.''  Univ.Ass. Dipl.-Ing. Dr.techn. Wilfried Elmenreich Institut f\"{u}r Technische Informatik Fakult\"{a}t f\"{u}r Informatik Technische Universit\"{a}t Wien.  Juli 2008.  \url{https://www.lri.fr/~nowak/misc/bakk.pdf}
@@ -3068,6 +3782,48 @@ Hubert Nguyen. \textbf{GPU Gems 3}.  Addison-Wesley Professional (August 12, 200
 
 \bibitem{HCL}
 Chih-Wei Hsu, Chih-Chung Chang, and Chih-Jen Lin.  \emph{A Practical Guide to Support Vector Classification}.  \url{http://www.ee.columbia.edu/~sfchang/course/spr/papers/svm-practical-guide.pdf}
+
+\bibitem{MiTa}
+Rada Mihalcea and Paul Tarau.  "TextRank: Bringing Order into Texts."  
+\url{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}  
+
+\bibitem{Glei2015}
+David F. Gleich.  \emph{PageRank Beyond the Web.}  \textbf{SIAM Review}.  Vol. 57, No. 3, pp. 321-363 2015  
+  
+\bibitem{PBMW1998}  
+Page, Lawrence and Brin, Sergey and Motwani, Rajeev and Winograd, Terry.  "The PageRank Citation Ranking: Bringing Order to the Web." Technical Report. Stanford InfoLab.  1998.  \url{http://ilpubs.stanford.edu:8090/422/1/1999-66.pdf}  
+  
+\bibitem{TUMHPC2016}
+Prof. Dr. Michael Bader, with Alexander P\"{o}ppl, Valeriy Khakhutskyy (Tutorials).  High Performance Computing (HPC) - Algorithms and Applications - Winter 16/17.  Informatics V - Scientific Computing.  Technical University of Munich (TUM)
+\url{https://www5.in.tum.de/wiki/index.php/HPC_-_Algorithms_and_Applications_-_Winter_16}
+
+
+\bibitem{AnNg}
+Andrew Ng.  \href{https://www.coursera.org/learn/machine-learning/home/welcome}{Machine Learning}.  \href{https://www.coursera.org}{coursera}
+
+\bibitem{theano}
+Theano Development Team. \href{http://arxiv.org/pdf/1605.02688.pdf}{“Theano: A Python framework for fast computation of mathematical expressions”}. 
+
+\bibitem{JRotman2010}
+Joseph J. Rotman, \textbf{Advanced Modern Algebra} (Graduate Studies in Mathematics) 2nd Edition, American Mathematical Society; 2 edition (August 10, 2010), ISBN-13: 978-0821847411
+
+\bibitem{JLee2009}
+Jeffrey M. Lee. \textbf{Manifolds and Differential Geometry}, \emph{Graduate Studies in Mathematics} Volume: 107, American Mathematical Society, 2009. ISBN-13: 978-0-8218-4815-9
+
+\bibitem{Conl2008}
+Lawrence Conlon.  \textbf{Differentiable Manifolds} (Modern Birkhäuser Classics).  2nd Edition.  Birkhäuser; 2nd edition (October 10, 2008).  ISBN-13: 978-0817647667
+
+\bibitem{SageMath2017}
+The Sage Development Team.  Sage Reference Manual: Category Framework.  Release 7.6.  Mar. 25, 2017.  
+
+\bibitem{tensorflow2015}
+Martín Abadi, Ashish Agarwal, Paul Barham, Eugene Brevdo,Zhifeng Chen, Craig Citro, Greg S. Corrado, Andy Davis,Jeffrey Dean,Matthieu Devin, Sanjay Ghemawat, Ian Goodfellow,Andrew Harp, Geoffrey Irving, Michael Isard, Rafal Jozefowicz, Yangqing Jia,Lukasz Kaiser, Manjunath Kudlur, Josh Levenberg, Dan Mané, Mike Schuster,Rajat Monga, Sherry Moore, Derek Murray, Chris Olah, Jonathon Shlens,Benoit Steiner, Ilya Sutskever, Kunal Talwar, Paul Tucker,Vincent Vanhoucke, Vijay Vasudevan, Fernanda Viégas,Oriol Vinyals, Pete Warden, Martin Wattenberg, Martin Wicke,Yuan Yu, and Xiaoqiang Zheng.  
+\emph{TensorFlow: Large-scale machine learning on heterogeneous systems}, 2015. Software available from \href{http://tensorflow.org/}{tensorflow.org.}
+
+\bibitem{JZS2015}
+Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever.  "An Empirical Exploration of Recurrent Network Architectures."  \emph{Proceedings of the 32nd
+International  Conference on  Machine Learning}, Lille, France, 2015.  JMLR: W\&CP volume 37.  \url{http://www.jmlr.org/proceedings/papers/v37/jozefowicz15.pdf} 
+
 
   
 \end{thebibliography}
