@@ -2382,6 +2382,29 @@ Here are the necessary (and all) dimensions that have to be provided to define c
 
 EY : 20170807 My question is if max-pooling should be its own "layer" or should be done or included with, after, every convolution.  (?,???)
 
+Make a chart of these dimensions and "size dimensions" should be very useful as a sanity check that the dimensions are correct ("shapes" in theano) and to comprehensively and succinctly describe the entire convolution neural network.  I claim that the entire convolution neural network is completely described by these sets of numbers.  For instance, for the example presented in 
+\href{http://deeplearning.net/tutorial/lenet.html}{Convolutional Neural Networks (LeNet)} for \verb|theano|, the LeNet is succinctly and entirely described as follows:  
+\[
+\begin{aligned}
+%\begin{tabular}{l c c c c }
+& d=2 &  &  & & \\
+& l = & 1  \qquad \, &  2 & 3 & \qquad \, 4  \\
+& (C_{l-1}, C_l ) \qquad \, & (1,20) \qquad \, & (20,50) & & \\
+& (W_1, \dots W_d) & (5,5) \qquad \, &  (5,5) & & \\ 
+& (P_1 \dots P_d) & (2,2) \qquad \, & (2,2) & & \\
+& (L_1\dots L_d) & (28,28) \qquad \, & (12,12) & & \\ 
+& (s_{l-1}, s_l) &                 &              & (50\cdot 4^2, 500) & \qquad \, (500,10)  \\
+\end{aligned}
+%\end{tabular}
+\]
+and also these important relations or checks between convolution axons and from a convolution axon to a DNN (i.e. so-called "fully connected layer") can be checked arithmetically, respectively:
+\begin{equation}
+\begin{gathered}
+	L_i^{(l)} = \frac{L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(l-1)} } \\ 
+s_l = C_{l-1} \prod_{i=1}^d \left( \frac{ L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(l-1)} } \right) 
+\end{gathered}
+\end{equation}
+
 \part{Support Vector Machines (SVM)}
 
 The clearest and most mathematically rigorous (and satisfying) introductory exposition on support vector machines (SVM) comes out of a Bachelor's thesis from Nowak (2008) \cite{Nowa2008}.  There is a lot of material that tries to talk about SVM, but the implementation either boils down to showing how to turn the crank on a black-box solution, or is too verbose without saying anything substantial.  I'll include references and links of the material I looked at and didn't find as helpful as Nowak (2008) \cite{Nowa2008}.  

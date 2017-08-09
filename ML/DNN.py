@@ -50,7 +50,7 @@ class Axon(object):
 	after initialization (automatic, via __init__), remember to "connect the layers l and l+1" with the class method connect_through
 	"""
 
-	def __init__(self, l, s_ls, al=None, Theta=None, b=None, activation=T.tanh, rng=None ):
+	def __init__(self, l, s_ls, alm1=None, Theta=None, b=None, activation=T.tanh, rng=None ):
 		""" Initialize the parameters for the `layer`
 
 		@type rng  : numpy.random.RandomState
@@ -75,7 +75,7 @@ class Axon(object):
 		@type activation  : theano.Op or function
 		@param activation : Non linearity to be applied in the layer(s)
 		"""
-		s_l, s_lp1 = s_ls
+		s_lm1, s_l = s_ls
 
 		if rng is None:
 			rng = np.random.RandomState(1234)
@@ -84,13 +84,13 @@ class Axon(object):
 			try:
 				Theta_values = np.asarray( 
 					rng.uniform( 
-						low=-np.sqrt(6. / ( s_l + s_lp1 )), 
-						high=np.sqrt(6. / ( s_l + s_lp1 )), size=(s_l, s_lp1) ), 
+						low=-np.sqrt(6. / ( s_lm1 + s_l )), 
+						high=np.sqrt(6. / ( s_lm1 + s_l )), size=(s_lm1, s_l) ), 
 						dtype=theano.config.floatX 
 				)
 				
 			except MemoryError:
-				Theta_values = np.zeros((s_l,s_lp1)).astype(theano.config.floatX)	
+				Theta_values = np.zeros((s_lm1,s_l)).astype(theano.config.floatX)	
 			
 				
 			if activation == T.nnet.sigmoid:
@@ -100,16 +100,16 @@ class Axon(object):
 		
 
 		if b is None:
-			b_values =  np.ones(s_lp1).astype(theano.config.floatX)
+			b_values =  np.ones(s_l).astype(theano.config.floatX)
 			b= theano.shared(value=b_values, name='b'+str(l), borrow=True)	
 			
-		if al is None:
-			al = T.matrix(dtype=theano.config.floatX)
+		if alm1 is None:
+			alm1 = T.matrix(dtype=theano.config.floatX)
 			
 	
-		self.Theta = Theta  # size dims. (s_l,s_lp1) i.e. s_l x s_lp1
-		self.b     = b      # dims. s_lp1
-		self.al    = al     # dims. s_l
+		self.Theta = Theta  # size dims. (s_lm1,s_l) i.e. s_lm1 x s_l
+		self.b     = b      # dims. s_l
+		self.alm1    = alm1     # dims. s_lm1
 		
 		self.l     = l
 
@@ -119,24 +119,23 @@ class Axon(object):
 			self.psi = activation
 
 
-
-	def connect_through(self, al_in=None):
+	def connect_through(self, alm1_in=None):
 		""" connect_through
 
 			Note that I made connect_through a separate class method, separate from the automatic initialization, 
 			because you can then make changes to the "layer units" or "nodes" before "connecting the layers"
 				"""
 
-		if al_in is not None:
-			self.al = al_in
+		if alm1_in is not None:
+			self.alm1 = alm1_in
 
-		lin_zlp1 = T.dot( self.al, self.Theta) + self.b
+		lin_zl = T.dot( self.alm1, self.Theta) + self.b
 		if self.psi is None:
-			self.alp1 = lin_zlp1
+			self.al = lin_zl
 		else:
-			self.alp1 = self.psi( lin_zlp1 )
+			self.al = self.psi( lin_zl )
 
-		return self.alp1
+		return self.al
 
 	def __get_state__(self):
 		""" __get_state__ 
@@ -177,7 +176,7 @@ class Axon(object):
 class Feedforward(object):
 	""" Feedforward - Feedforward
 	"""
-	def __init__(self, L, s_l, activation_fxn=T.tanh, psi_Lm1=T.tanh, rng=None ):
+	def __init__(self, L, s_l, activation_fxn=T.tanh, psi_L=T.tanh, rng=None ):
 		""" Initialize MLP class
 
 		INPUT/PARAMETER(S)
@@ -203,25 +202,25 @@ class Feedforward(object):
 		Axons_lst = [] # temporary list of Thetas, Theta,b weights or parameters
 
 		# initialize an instance of class Axon
-		Axon0 = Axon(0, (s_l[0],s_l[1]), activation=activation_fxn, rng=rng)
-		Axon0.connect_through()
+		Axon1 = Axon(1, (s_l[0],s_l[1]), activation=activation_fxn, rng=rng)
+		Axon1.connect_through()
 		
-		Axons_lst.append( Axon0 )
+		Axons_lst.append( Axon1 )
 		
-		for l in range(1,L-1): # don't include the Theta,b going to the output layer in this loop
-			inputlayer_al = Axons_lst[-1].alp1
+		for l in range(2,L): # don't include the Theta,b going to the output layer in this loop
+			inputlayer_alm1 = Axons_lst[-1].al
 
 			#initialize an instance of class Axon
-			Axonl = Axon(l,(s_l[l],s_l[l+1]),al=inputlayer_al, activation=activation_fxn, rng=rng)
+			Axonl = Axon(l,(s_l[l-1],s_l[l]),alm1=inputlayer_alm1, activation=activation_fxn, rng=rng)
 			Axonl.connect_through()
 			Axons_lst.append( Axonl )
 
 		# (Theta,b), going to output layer, l=L
 		if (L>1):
-			inputlayer_al = Axons_lst[-1].alp1
+			inputlayer_alm1 = Axons_lst[-1].al
 
 			#initialize an instance of class Thetab_right
-			Axonl = Axon(L-1,(s_l[L-1],s_l[L]),al=inputlayer_al, activation=psi_Lm1, rng=rng)
+			Axonl = Axon(L,(s_l[L-1],s_l[L]),alm1=inputlayer_alm1, activation=psi_L, rng=rng)
 			Axonl.connect_through()
 			Axons_lst.append(Axonl)
 		
@@ -236,17 +235,17 @@ class Feedforward(object):
 		@type X_in : theano shared variable or theano symbolic variable (such as T.matrix, T.vector) but with values set
 
 		"""
-		self.Axons[0].al = X_in
+		self.Axons[0].alm1 = X_in
 		self.Axons[0].connect_through()
 		
 		L = self.L
 		
-		for l in range(1,L):  	# l=1,2,...L-1, for each of the Theta operations between layers l
-			self.Axons[l].al = self.Axons[l-1].alp1
-			self.Axons[l].connect_through()	
+		for idx in range(1,L):  	# idx=1,2,...L-1, for each of the Theta operations between layers l
+			self.Axons[idx].alm1 = self.Axons[idx-1].al
+			self.Axons[idx].connect_through()	
 		
 		# return the result of Feedforward operation, denoted h_Theta
-		h_Theta = self.Axons[-1].alp1
+		h_Theta = self.Axons[-1].al
 		return h_Theta
 
 	def __get_state__(self):
@@ -291,7 +290,7 @@ class Feedforward(object):
 								compute a value
 		"""
 		Axons = self.Axons
-		outer_layer = Axons[-1].alp1
+		outer_layer = Axons[-1].al
 		return outer_layer						
 
 ########################################################################
@@ -309,7 +308,7 @@ class DNN(object):
 	=========================
 	
 	"""
-	def __init__(self, DNN_model, y=None,X=None  ):
+	def __init__(self, DNN_model, X=None , y=None ):
 		""" Initialize MemoryBlock class
 		
 		INPUT/PARAMETER(S)
@@ -321,18 +320,41 @@ class DNN(object):
 		@type y : numpy array of size dims. (m,K)
 		@param y : output data of training examples
 		
+		USAGE/USING THIS CLASS REMARKS:
+		===============================
+		While the default values of X and y (representing input data and the actual output values 
+		(to test against the calculated, predicted values) are None, and None, respectively, 
+		you'd want to load your data, from numpy arrays that reside on the hard drive 
+		and then to the RAM, and then load it onto the GPU as a shared variable.  
+		You don't want very many memory transfers between CPU and GPU.  
+		You want to load as much, 1 time, onto the GPU from the beginning, 
+		do all computations on the GPU, and transfer back at the very end.  
+		
+		i.e. 
+		
+        The reason we store our dataset in shared variables is to allow
+        Theano to copy it into the GPU memory (when code is run on GPU).
+        Since copying data into the GPU is slow, copying a minibatch everytime
+        is needed (the default behaviour if the data is not in a shared
+        variable) would lead to a large decrease in performance.
+		
+		So initialize CNN class with your data from the beginning.  
+		Be sure the size dimensions ("shapes" are all correct) 
+		
 		"""
 		self.DNN_model = DNN_model
 
 		if X is None:
 			self.X = T.matrix(dtype=theano.config.floatX)
 		else:
-			self.X = theano.shared( X.astype(theano.config.floatX))
+			self.X = theano.shared( X.astype(theano.config.floatX), 
+									borrow=borrow)
 
 		if y is None:
 			y = T.matrix(dtype=theano.config.floatX)
 		else:
-			self.y = theano.shared( y.astype(theano.config.floatX))
+			self.y = theano.shared( y.astype(theano.config.floatX), 
+									borrow=borrow)
 
 	def build_J_L2norm_w_reg(self, lambda_val, y_sym=None):
 		""" build_J_L2norm_w_reg - build or make cost functional, of the form of the L2 norm (i.e. Euclidean distance norm)
@@ -554,30 +576,42 @@ NOTE: y_sym = T.matrix(); # this could be a vector, but I can keep y to be "gene
 	"""
 	J_theta = np.cast[theano.config.floatX](0.5) * T.mean(T.sqr(h-y_sym))
 
+	# T.sqr is element-wise operation (take the square of each element), and so it's an automorphism
 	reg_term = T.mean( [ T.sum( T.sqr(Theta), acc_dtype=theano.config.floatX) for Theta in Thetas], acc_dtype=theano.config.floatX )
 	reg_term = np.cast[theano.config.floatX](lambda_val/ (2.))*reg_term
 
 	J_theta = J_theta + reg_term
 	return J_theta
 
+
+
 def build_cost_functional_xent(h,y,Thetas):
 	"""
 	xent - cross entropy
 	"""
-	J_binary=T.nnet.binary_crossentropy(h,y).mean()
+#	J_categorical=T.nnet.categorical_crossentropy(h,y).mean()
+#	J_categorical=T.nnet.categorical_crossentropy(h,y)
+	J_binary=T.nnet.binary_crossentropy(h,y)
+
+#	return J_categorical
 	return J_binary
+
 
 def build_cost_functional_xent_w_reg(lambda_val,h,y,Thetas):
 	"""
 	xent - cross entropy
 	"""
-	J_binary=T.nnet.binary_crossentropy(h,y).mean()
+#	J_categorical=T.nnet.categorical_crossentropy(h,y).mean()
+#	J_categorical=T.nnet.categorical_crossentropy(h,y)
+	J_binary=T.nnet.binary_crossentropy(h,y)
 
+	# T.sqr is element-wise operation (take the square of each element), and so it's an automorphism
 	reg_term = T.mean( [ T.sum( T.sqr(Theta), acc_dtype=theano.config.floatX) for Theta in Thetas], acc_dtype=theano.config.floatX )
 	reg_term = np.cast[theano.config.floatX](lambda_val/ (2.))*reg_term
 
 	J_binary += reg_term
 
+#	return J_categorical
 	return J_binary
 
 
