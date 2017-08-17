@@ -2405,6 +2405,256 @@ s_l = C_{l-1} \prod_{i=1}^d \left( \frac{ L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(
 \end{gathered}
 \end{equation}
 
+\part{Vision; Computer Vision, 3-dim. Computer Vision, Projections, $\mathbb{R}P^n$}
+
+Cyganek and Siebert (2009) \cite{CySi2009} suggested Hartley and Zisserman (2003) \cite{HaZi2003}
+
+cf. Part I, Camera Geometry and Single View Geometry; Ch. 6 Camera Models; 6.1 Finite cameras of Hartley and Zisserman (2003) \cite{HaZi2003}.  
+
+John Lee (2012) \cite{JLee2012}
+
+
+We have surjective $\pi$, \\
+for $0$ at camera center $C$:  
+
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^d \backslash \lbrace 0 \rbrace \xrightarrow{ \pi } \mathbb{R}P^{d-1}  \xrightarrow{ \varphi_d } \\
+	(x^1 , \dots x^d) \xmapsto{ \pi } \left[ \left( \frac{x^1}{x^d} \dots \frac{x^{d-1}}{x^d} , 1 \right) \right] \mapsto \left( \frac{x^1}{x^d} \dots \frac{x^{d-1}}{x^d} \right) 
+\end{gathered}
+\end{equation}
+
+The smooth manifold $\mathbb{R}P^{d-1}$ has an atlas $\mathcal{A}_{\mathbb{R}P^{d-1}}$: 
+\begin{equation}
+\begin{gathered}
+	\mathcal{A}_{\mathbb{R}P^{d-1} } = \lbrace ( U_i , \varphi_i) \rbrace_{i=1}^d \text{ s.t. } \\ 
+\begin{gathered}
+\begin{aligned}
+	& \varphi_i: U_i \to \mathbb{R}^{d-1} , \qquad \, \forall \, i =1 \dots d \\
+	& \varphi_i([x^1 \dots x^d]) = \left( \frac{x^1}{x^i} \dots \frac{x^{i-1}}{x^i} , \widehat{1}, \frac{x^{i+1}}{x^i} \dots \frac{x^d}{x^i} \right) 
+\end{aligned} \\
+\begin{aligned}
+	& \varphi_i^{-1} : \mathbb{R}^{d-1} \to U_i \\ 
+	& \varphi_i^{-1} (u^1\dots u^{d-1}) = [ (u^1 \dots u^{i-1}, 1, u^i \dots u^{d-1} )]  
+\end{aligned}
+\end{gathered}
+\end{gathered}
+\end{equation}
+with transition functions
+\[
+\begin{gathered}
+	\begin{aligned}
+	& \varphi_j \circ \varphi_i^{-1} : \mathbb{R}^{d-1} \to \mathbb{R}^{d-1} \\ 
+	& \varphi_j \circ \varphi_i^{-1} (u^1 \dots u^{d-1}) = \left( \frac{u^1}{u^j} \dots \frac{u^{j-1}}{u^j}  , \frac{u^{j+1}}{u^j}  , \dots \frac{u^{i-1}}{u^j} , \frac{1}{u^j} , \frac{u^i}{u^j}   \dots \frac{u^{d-1}}{u^j}  \right)
+\end{aligned}
+\end{gathered}
+\]
+
+Considering the focal length $f$ of the camera lens, so that the camera focuses the image out at a \emph{focal distance} $f$, by geometry, there's a ratio to be obeyed:
+\[
+\frac{\alpha}{f} = \frac{y}{z} \Longrightarrow \alpha = \frac{fy}{z}
+\]
+This is encapsulated in the equivalence relation for $\mathbb{R}P^{d-1}$, namely for so-called \emph{homogeneous coordinates} (Jeffrey Lee (2009)), in that 
+\[
+\forall \, \lambda \in \mathbb{R} \backslash \lbrace 0 \rbrace , [\lambda x^1 \dots \lambda x^d] = [x^1 \dots x^d] 
+\]
+and so 
+\[
+[(x,y,z) ] = [ \left( \frac{x}{z} , \frac{y}{z} , 1 \right) ] = \left[ \left( \frac{fx}{z}, \frac{fy}{z} , f \right) \right]
+\]
+
+Center of projection $C \equiv $ \emph{camera center} $\equiv$ \emph{optical center}  \\
+\emph{principal axis} or \emph{principal ray} of the camera $\equiv$ line from $C$ perpendicular to image plane.  \\
+\emph{principal point} $\equiv $ pt. where principal axis meets image plan.  
+
+\subsubsection{Principal point offset} cf. pp. 155 of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+Consider a point $P_{\text{offset}} = (p^1 \dots p^{d-1}) \in \mathbb{R}^{d-1} = \varphi_d(U_d) \text{ with open } \varphi_d \subset \mathbb{R}P^{d-1}$.  
+
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^d \xrightarrow{ \pi } \mathbb{R}P^{d-1} \xrightarrow{ \varphi_d  } \mathbb{R}^{d-1}  \xrightarrow{ f\cdot } \mathbb{R}^{d-1} \xrightarrow{ + P_{\text{offset}} } \mathbb{R}^{d-1} \xrightarrow{ \varphi_d^{-1} } \mathbb{R}P^{d-1}  \\
+\begin{gathered}
+(x,y,z) \xmapsto{ \pi } [(x,y,z)] = \left[ \left( \frac{x}{z}, \frac{y}{z},1 \right) \right] \xmapsto{ \varphi_d }  \left( \frac{x}{z} , \frac{y}{z} \right) \xmapsto{ f\cdot } \left( \frac{fx}{z} , \frac{fy}{z} \right) \xmapsto{ + P_{\text{offset}} } \left( \frac{fx}{z} + p_x,  \frac{fy}{z} + p_y \right) \xmapsto{ \varphi_d^{-1}} \\
+ \xmapsto{ \varphi_d^{-1}} \left[ \left( \frac{fx}{z} + p_x , \frac{fy}{z} + p_y ,1\right) \right] = \left[ (fx+p_xz, fy+p_yz, z) \right]
+\end{gathered}
+\end{gathered}
+\end{equation}
+
+And so harmonize this expression or formulation with that for Hartley and Zisserman (2003) \cite{HaZi2003}.   
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^3 \xrightarrow{ \varphi_d^{-1} \circ (+P_{\text{offset}} ) \circ (f\cdot) \circ \varphi_3 \circ \pi } \mathbb{R}P^2 \\
+(x,y,z) \xmapsto{ \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_3 \circ \pi } [(fx+p_xz, fy+p_yz,z)] \\ 
+\left[ \begin{matrix} f & & p_x \\ & f & p_y \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} x \\ y \\ z \end{matrix} \right] = \left[ \begin{matrix} fx+p_x z \\ fy + p_y z \\ z \end{matrix} \right]
+\end{gathered}
+\end{equation}
+
+\subsubsection{Camera rotation and translation}  cf. pp. 155 of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+We had assumed that $\mathbb{R}^3$ was centered at the camera $C$, camera center.  
+
+In general, consider now this atlas for $\mathbb{R}^3$ (I'll write $\mathbb{R}^d$ to implicitly generalize the space dimensions):  
+\[
+\mathcal{A}_{\mathbb{R}^3} = \lbrace (\mathbb{R}^3, \varphi_C ) ,(\mathbb{R}^3,\varphi_C) \rbrace
+\]
+where $(\mathbb{R}^3, \varphi_C )$ are coordinate system centered at $C$, and $(\mathbb{R}^3, \varphi_O )$ is a coordinate system centered at some general point $O$, representing the "world" we're taking a picture of right now.  $\varphi_0 = \varphi^{-1}_0 = 1$.  
+
+Let $C \in \mathbb{R}^d$, $C= (C^1\dots C^d)$ where the camera is, relative to $O$, origin of $\mathbb{R}^d$.  
+
+Then 
+\[
+\begin{gathered}
+\varphi_C \circ \varphi_O^{-1} = \varphi_C \\ 
+ \varphi_C \circ \varphi_O^{-1}  (x,y,z) = \varphi_C(x,y,z) \equiv \varphi_C(X) = R(X-C) = R^i_{ \  \  j } (X^j-C^j) = X^i_{\text{(cam)} }
+\end{gathered}
+\]
+with $R$ being a rotation matrix.  
+
+We considered, implicitly, the open sets $U_O$, $U_C$ for the coordinate charts $\varphi_O$, $\varphi_C$ which map a point in $\mathbb{R}^d$ to its coordinates in a coordinate frame \emph{centered} at $O$ or $C$, respectively.  Note that $U_0 = U_C = \mathbb{R}^d$.  And so for the projection, Eq. (6.6), (6.7) of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+\[
+\begin{gathered}
+\mathbb{R}^d \xrightarrow{ \varphi_C \varphi_O^{-1} } \mathbb{R}^d \xrightarrow{  \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1}  \\
+(x,y,z) \mapsto R((x,y,z) - C) = (x_{\text{(cam)}},y_{\text{(cam)}},z_{\text{(cam)}}) \xmapsto{  \varphi_d^{-1} \circ (+P_{\text{offset}} ) \circ (f\cdot) \circ \varphi_d \circ \pi } \left[ \begin{matrix} f & & p_x \\ & f & p_y \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} x_{\text{(cam)}} \\ y_{\text{(cam)}} \\ z_{\text{(cam)}} \end{matrix} \right] = \left[ \begin{matrix} fx_{\text{(cam)}}+p_x z_{\text{(cam)}} \\ fy_{\text{(cam)}} + p_y z_{\text{(cam)}} \\ z_{\text{(cam)}} \end{matrix} \right] = \\
+= \left[ \begin{matrix} fR^1_{ \  \  j}(X^j-C^j)+p_x R^3_{ \  \  j}(X^j-C^j) \\ f R^2_{ \  \  j}(X^j-C^j) + p_y R^3_{ \  \  j}(X^j-C^j) \\ R^3_{ \  \  j}(X^j-C^j) \end{matrix} \right] 
+\end{gathered}
+\]
+
+\subsubsection{CCD cameras}
+
+$m_x \equiv $ number of pixels per unit distance in image coordinate $x$  \\
+$m_y \equiv $ number of pixels per unit distance in image coordinate $y$  
+
+\[
+\begin{gathered}
+ \mathbb{R}^d = \varphi_C(\mathbb{R}^d) \xrightarrow{  \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1} \xrightarrow{ \text{diag}(m_x,m_y,1) } \mathbb{R}P^{d-1} \\ 
+\varphi_C(X) = X_{\text{(cam)}} \mapsto [(fx_{\text{(cam)}} + p_x z_{\text{(cam)}} , fy_{\text{(cam)}} + p_y z_{\text{(cam)}} , z_{\text{(cam)}} ) ] \mapsto [ (\alpha_x x_{\text{(cam)}} + x_0 z_{\text{(cam)}} , \alpha_y y_{\text{(cam)}} + y_0 z_{\text{(cam)}}, z_{\text{(cam)}} )]
+\end{gathered}
+\]
+with $\begin{aligned} & \quad \\
+	& \alpha_x = fm_x \\ 
+& \alpha_y = fm_y \end{aligned}$ and $\begin{aligned} & \quad \\
+	& x_0 = m_x p_x \\ 
+& y_0 = m_y p_y \end{aligned}$
+
+So in general, using composition, 
+\begin{equation}
+\begin{gathered}
+\text{diag}(m_x , m_y , 1) \circ \varphi_d^{-1} \circ ( + P_{\text{offset}} ) \circ (f\cdot)\circ \varphi_d \circ \pi \circ R \equiv \texttt{M} \quad \text{ (pp. 157 of Hartley and Zisserman (2003) \cite{HaZi2003})} = \\
+	= \left[ \begin{matrix} \alpha_x & & x_0 \\ & \alpha_y & y_0 \\ & & 1 \end{matrix} \right] R 
+\end{gathered}
+\end{equation}
+
+\subsubsection{Backprojection of a projective camera; Back-projection of points to rays}  
+
+cf. 6.2.2 Action of a projective camera on points; Back-projection of points to rays of Hartley and Zisserman (2003) \cite{HaZi2003}.  
+
+Given $(u,v) \equiv (u^1 ,u^2) \in \mathbb{R}^{d-1} = \varphi_d(U_d)$ and, given $C \in \varphi_O(\mathbb{R}^d)$ (so $C$ is the camera center with respect to the origin of coordinate chart at $O$), and given focal length $f$, then
+\[
+\begin{gathered}
+\mathbb{R}^{d-1} = \varphi_d(U_d) \xrightarrow{ -P_{\text{offset}} } \mathbb{R}^{d-1}  \xrightarrow{ \frac{1}{f} } \mathbb{R}^{d-1} \xmapsto{ \varphi_d^{-1} } \mathbb{R}P^{d-1} \xrightarrow{ \pi^{-1} } \mathbb{R}^d \\
+	(u',v') \xmapsto{ -P_{\text{offset}} } (u,v) = (u'-p_x,v'-p_y)  \xmapsto{ \frac{1}{f} } \left( \frac{u}{f}, \frac{v}{f} \right) \xmapsto{ \varphi_d^{-1} } \left[ \left( \frac{u}{f}, \frac{v}{f},1 \right) \right] = \left[ \left( \frac{uz}{f} , \frac{vz}{f} , z \right) \right] \xrightarrow{ \pi^{-1} } \left( \frac{uz}{f}, \frac{vz}{f} , z \right)  \\
+\Longrightarrow  \left[ \begin{matrix} \frac{z}{f} & 0 \\  & \frac{z}{f} \\ & \end{matrix} \right] \left[ \begin{matrix} u \\ v \end{matrix} \right] + z \left[ \begin{matrix}  0 \\ 0 \\ 1 \end{matrix} \right] = (x,y,z)
+\end{gathered}
+\]
+and so $z$, the "depth" of pt. $X\in \mathbb{R}^3 = \mathbb{R}^d$ must be given.  
+
+
+
+\subsubsection{Pl\"{u}cker coordinates}  
+
+Let $x,y \in L \subset \mathbb{R}^d$ (e.g. $d=3$), $x\neq y$.  \\
+Define $d:= x-y \in \mathbb{R}^d$.  \\
+"moment" $m:= x\wedge y = x^i e_i \wedge y^j e_j = x^i y^j e_i \wedge e_j = x^i y^j \epsilon_{ijk} e_k \in \mathbb{R}^d$.  
+
+So $d\cdot m =0$, since $(x-y)\cdot (x\wedge y) =0$.  
+
+Consider 
+\[
+[(d^1\dots d^d,m^1 \dots m^d)] = [(d^1,d^2,d^3,m^1,m^2,m^3)] \in \mathbb{R}P^5
+\]
+In a $\mathbb{R}P^3 = \mathbb{R}P^d$, let $L\subset \mathbb{R}P^^3$, let $x,y \in \mathbb{R}P^3$, $x\neq y$.  
+
+\textbf{Pl\"{u}cker coordinates} $p_{ij} = x_i y_j - x_j y_i $, $i,j=0,1,2,3$.  
+
+So $p_{ij} = [(p_{01}, p_{02}, p_{03}, p_{23}, p_{31}, p_{12}) ] \in \mathbb{R}P^5$.  
+
+Another way to write this:  
+\[
+\begin{gathered}
+	M:= \left[ \begin{matrix} x_0 & y_0 \\ x_1 & y_1 \\ x_2 & y_2 \\ x_3 & y_3 \end{matrix} \right] \\
+ p_{ij}  =\text{det}(M_i*, M_{j*} )
+\end{gathered}
+\]
+For $x_0=1$, 
+\begin{equation}
+\begin{gathered}
+d=(p_{01},p_{02}, p_{03}) \\
+m = (p_{23}, p_{31},p_{12}) \end{gathered}
+\end{equation}
+
+Given $p_{ij} = [(d,m)]$, 
+\begin{equation}
+0 = d\times q - m, \qquad \, \forall \, q \in \text{ line } L_0
+\end{equation}
+cf. \url{http://orb.olin.edu/plucker.pdf}
+
+
+
+\url{http://ags.cs.uni-kl.de/fileadmin/inf_ags/3dcv-ws11-12/3DCV_WS11-12_lec05.pdf}  
+
+Prof. D. Stricker.  3D Computer Vision, Winter Semester 2011-2012.  
+
+\subsection{Fundamental matrix, $F$}
+
+Fundamental matrix $F$ is a rank $2=d-1$ matrix.  
+
+\subsubsection{Examples with 2 cameras; Fundamental matrix $F$}
+
+cf. Example I of \url{http://ags.cs.uni-kl.de/fileadmin/inf_ags/3dcv-ws11-12/3DCV_WS11-12_lec05.pdf}  
+
+Compute the fundamental matrix of a parallel camera stereo rig.  
+
+$C=0=\varphi_0(0) \in \mathbb{R}^3 = \varphi_0(\mathbb{R}^3) $; \quad \, $R=1$.  $P_{\text{offset}}=0$.  $f=f'$  \\
+$C'=(t_x,0,0) \in \mathbb{R}^3 = \varphi_0(\mathbb{R}^3)$, $R=1$.  $P_{\text{offset}}' = 0$.  
+
+\[
+\begin{gathered}
+	\mathbb{R}^d = \varphi_0(\mathbb{R}^3) \xrightarrow{ \varphi_d^{-1} f \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1} \\ 
+ X \mapsto \varphi_d^{-1}(f\left( \frac{x}{z}, \frac{y}{z} \right) ) = \left[ \left( \frac{fx}{z}, \frac{fy}{z},1 \right) \right] = [ (fx,fy,z) ] = \\
+= KX=\left[ \begin{matrix} f & & \\ & f & \\ & & 1 \end{matrix} \right] X
+\end{gathered}
+\]
+
+For the other image point on the other camera, 
+\[
+\begin{gathered}
+	\mathbb{R}^d = \varphi_0(\mathbb{R}^3) \xrightarrow{ \varphi_d^{-1} f \circ \varphi_d \circ \pi (-C)} \mathbb{R}P^{d-1} \\ 
+X \mapsto \varphi_d^{-1} \left( f\left( \frac{x-t_x}{z} , \frac{y}{z} \right) \right) = \left[ \left( \frac{f(x-t_x )}{z} , \frac{fy}{z},1\right) \right] = [(f(x-t_x), fy,z) ] = K(X-C')
+\end{gathered}
+\]
+
+Plugging into the formula for $F$:  
+\[
+\begin{gathered}
+	F= ((K')^{-1})^T(\mathbf{t} \times (RK^{-1}) ) = 
+\left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} & & \\ & & -t_x \\ & t_x & \end{matrix} \right] \left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] = \left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} & & \\ & & -t_x \\ & \frac{t_x}{f} & \end{matrix} \right] = \left[ \begin{matrix} & & \\ & & -t_x/f \\ & \frac{t_x}{f} & \end{matrix} \right] = \frac{t_x}{f} \left[ \begin{matrix} & & \\ & & -1 \\ & 1 & \end{matrix} \right]
+\end{gathered}
+\]
+with $R=1$ in this case. 
+
+Since $F$ homgeneous, $F\sim \left[ \begin{matrix} & & \\ & & -1 \\ & 1 & \end{matrix} \right]$.  
+
+\[
+\begin{gathered}
+v^T F u \equiv (u')^T Fu \equiv (x')^T Fx = \left( \frac{ f(x-t_x)}{z}, \frac{fy}{z} ,1 \right) \left[ \begin{matrix} & & \\ & & -t_x \\ & t_x & \end{matrix} \right] \left[ \begin{matrix} \frac{fx}{z} \\ \frac{fy}{z} \\ 1 \end{matrix} \right] = \left( \frac{ f(x-t_x)}{z} , \frac{fy}{z} ,1\right) \left[ \begin{matrix} 0 \\ -t_x \\ \frac{fy}{z} t_x \end{matrix} \right] = 0 
+\end{gathered}
+\]
+
+
+
+
 \part{Support Vector Machines (SVM)}
 
 The clearest and most mathematically rigorous (and satisfying) introductory exposition on support vector machines (SVM) comes out of a Bachelor's thesis from Nowak (2008) \cite{Nowa2008}.  There is a lot of material that tries to talk about SVM, but the implementation either boils down to showing how to turn the crank on a black-box solution, or is too verbose without saying anything substantial.  I'll include references and links of the material I looked at and didn't find as helpful as Nowak (2008) \cite{Nowa2008}.  
@@ -3796,6 +4046,21 @@ Hubert Nguyen. \textbf{GPU Gems 3}.  Addison-Wesley Professional (August 12, 200
 
 \bibitem{Pedr2011}
   Scikit-learn: Machine Learning in Python, Pedregosa \emph{et al.}, \textbf{JMLR 12}, pp. 2825-2830, 2011.
+
+
+\bibitem{CySi2009}
+Bogus\l{} aw Cyganek.  J. Paul Siebert.  \textbf{An Introduction to 3D Computer Vision Techniques and Algorithms}.  Wiley.  2009.  ISBN 978-0-470-01704-3
+
+ \bibitem{HaZi2003}
+Richard Hartley.  Andrew Zisserman.  \textbf{Multiple View Geometry in Computer Vision}  Second Edition.  \emph{Cambridge University Press.}  2003.  ISBN-13 978-0-511-18618-9 eBook (EBL)
+
+\bibitem{JLee2012}
+John Lee, \textbf{Introduction to Smooth Manifolds} (Graduate Texts in Mathematics, Vol. 218), 2nd edition, Springer,  2012, ISBN-13: 978-1441999818
+
+\bibitem{JLee2009}
+Jeffrey M. Lee. \textbf{Manifolds and Differential Geometry}, \emph{Graduate Studies in Mathematics} Volume: 107, American Mathematical Society, 2009. ISBN-13: 978-0-8218-4815-9
+
+
 
 \bibitem{ChLi2011}
   C.-C. Chang and C.-J. Lin. \emph{LIBSVM : a library for support vector machines}. \textbf{ACM Transactions on Intelligent Systems and Technology}, 2:27:1--27:27, 2011. 
