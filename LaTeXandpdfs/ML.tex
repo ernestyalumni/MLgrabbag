@@ -1646,6 +1646,66 @@ In fact, we obtain an ordered sequence of ``activation'' vectors:
   \end{gathered}
   \end{equation}
 
+cf. \href{https://web.stanford.edu/class/cs294a/sparseAutoencoder_2011new.pdf}{CS294A Lecture notes, Andrew Ng, "Sparse autoencoder"}
+
+Cleaning up the notation abit, and having the retrospective (wiser, more general) view, the setup is this:  
+
+Given data to train on $(X,y) \in (\mathbb{K}^d \times \mathbb{K}^K)^m$, 
+\begin{equation}
+(X,y) \in (\mathbb{K}^d \times \mathbb{K}^K)^m \text{ where } \begin{aligned} & d = \text{ number of features } \\ 
+	& K = \text{ dim. of output } \\
+& m = \text{ number of training examples } \\ 
+& \mathbb{K} = \text{ field or set }
+\end{aligned}
+\end{equation}
+
+Consider weights and bias $(\Theta, b)$: 
+\begin{equation}
+	(\Theta, b) \in (\mathbf{\Theta}, \mathbf{b}) \equiv (\text{Mat}_{\mathbb{K}}(s_0,s_1) \times \mathbb{K}^{s_1} ) \times  (\text{Mat}_{\mathbb{K}}(s_1,s_2) \times \mathbb{K}^{s_2} ) \times \dots \times (\text{Mat}_{\mathbb{K}}(s_{L-1},s_L) \times \mathbb{K}^{s_L} )
+\end{equation}
+Consider the cost functional $\mathcal{J} := \mathcal{J}(\Theta,b)$ with the $L^1$ norm: 
+
+\begin{equation}
+\begin{aligned}
+\mathcal{J}(\Theta,b) & = \left[ \frac{1}{m} \sum_{i=1}^m \mathcal{J}(\Theta,b; X_{(i)}, y_{(i)} ) \right] + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1} -1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)} )^i_{ \  \  j} )^2  \\
+ &= \frac{1}{m} \sum_{i=1}^m \frac{1}{2} ( h_{(\Theta,b)}(X_{(i)} ) - y_{(i)} )^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1}  ((\Theta^{(l)})^i_{ \  \  j} )^2 
+\end{aligned}
+\end{equation}
+
+
+
+1 iteration of gradient descent, $t=0,1,\dots $  
+
+\begin{equation}
+\begin{aligned}
+&	(\Theta^{(l)})^i_{ \  \  j }(t+1)  = (\Theta^{(l)})^i_{ \  \  j}(t) - \alpha \frac{ \partial }{ \partial (\Theta^{(l)})^i_{ \  \  j} (t) } \mathcal{J}(\Theta,b) \qquad \, \begin{aligned}
+	& \forall \, l =1,2,\dots L \\ 
+	& \forall \, i = 0,1,\dots s_{l-1}- 1 \\ 
+	&  \forall \, j = 0,1,\dots s_l - 1 
+\end{aligned}
+	& (b^{(l)})_j(t+1) = (b^{(l)})_j(t) - \alpha \frac{ \partial }{ \partial (b^{(l)} )_j (t) } J(\Theta,b)
+\end{aligned}
+\end{equation}
+
+Consider the space of parameters $(\Theta,b) \in (\mathbf{\Theta}, \mathbf{b})$, 
+\begin{equation}
+(\Theta,b) \in (\mathbf{\Theta}, \mathbf{b}) \simeq \mathbb{R}^{ (s_0 + 1)s_1 + (s_1 +1)s_2 + \dots + (s_{L-1} + 1)s_L } \equiv \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }
+\end{equation}
+Treat $(\mathbf{\Theta}, \mathbf{b})$ as a \emph{differentiable manifold}, as it is isomorphic to $\mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }$.  Note that while the data isn't necessarily in the format of a field, nor $\mathbb{R}$ for that matter, surely the parameter space $(\mathbf{\Theta},\mathbf{b})$ is.  
+
+Assume that the cost functional is at least $C^1( (\mathbf{\Theta},\mathbf{b}) )$.  So 
+\[
+\begin{aligned}
+&	\mathcal{J} : (\mathbf{\Theta},\mathbf{b}) \simeq \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l  } \to \mathbb{R}^1 \\ 
+& 	\mathcal{J} : (\Theta,b) \mapsto \mathcal{J}( \Theta,b)
+\end{aligned}
+\]
+Consider 1-jets of $\mathcal{J} : (\mathbf{\Theta},\mathbf{b}) \simeq \mathbb{R}^{ \sum_{l=1}^L  (s_{l-1} + 1)s_l } \to \mathbb{R}^1 \equiv J^1( (\mathbf{\Theta},\mathbf{b}) , \mathbb{R}) = (\mathbf{\Theta},\mathbf{b}) \times \mathbb{R}^1 \times \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }$, i.e. treat $\mathcal{J}$ as section (or field)  $\mathcal{J} :  (\mathbf{\Theta},\mathbf{b}) \to (\mathbf{\Theta},\mathbf{b}) \times \mathbb{R}^1$.  
+
+Then, we must compute $J^1_{\mathcal{J}}( (\Theta,b))$, the 1-jet, for some $(\Theta,b)$ (that is given in the beginning of the current iteration), the 1-jet of cost functional $\mathcal{J}$ at $(\Theta,b)$; it consists of $\sum_{l=1}^L (s_{l-1} + 1)s_l$ partial derivatives.  
+
+
+
 
 From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagation algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
 
@@ -1845,6 +1905,8 @@ a^{(l)} &   z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
 \end{tikzpicture}
   \end{equation}
 
+See also \href{https://web.stanford.edu/class/cs294a/}{CS294A/CS294W Deep Learning and Unsupervised Feature Learning Winter 2011}
+
 \subsection{Cost functional}
 
 The cost function $J$ is really a cost \emph{functional}, to first input in the output values $y$.  So
@@ -1878,6 +1940,99 @@ For the above $\mathbf{ (\Theta,b)}$ was notation or shorthand as follows:
 \[
 \mathbf{ (\Theta,b ) } \equiv (\text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2}) \times (\text{Mat}_{\mathbb{R}}(s_2,s_3) \times \mathbb{R}^{s_3} ) \times \dots \times (\text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} )
 \]
+
+\section{Evaluating a Learning Algorithm, Model Selection, Cross-validation}  
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/OVM4M/deciding-what-to-try-next}{Deciding what to Try Next} for Week 6, Evaluating a Learning Algorithm.  
+
+Suppose we have a regularized linear regression model for supervised learning.  
+
+\begin{equation}
+	J(\Theta) = \frac{1}{2} \sum_{i=1}^m (h_{\Theta}(X_{(i)}) - y_{(i)} )^2 + \frac{\lambda}{2m} \sum_{j=1}^s \sum_{\mu=1}^d (\Theta_{\mu}^{\  \  \  j })^2 =  \frac{1}{2} \sum_{i=1}^m (h_{\Theta}(X_{(i)} ) - y_{(i)} )^2 + \frac{\lambda}{2m} \sum_{\mu =1}^d (\Theta_{\mu}^{ \  \  \  j })^2 
+\end{equation}
+
+For Model diagnosis, to answer questions of too great of error in $J$, \emph{do cross-validation}.  
+
+So, \\
+
+Do cross-validation.  For instance, given $X \in \mathbf{X} \in \text{Mod}_{R}$, $X_i^{ \  \  \mu } \in \mathbb{K}$, $\mathbf{X}_i \in \mathbb{K}^d$, \, $\forall \, i =1,2\dots m$, $\forall \, \mu =1\dots d$.  Do some random permutation on $(1,2,\dots m)$, and then split into training, validation, and test sets.  
+
+Suppose from $J(\Theta)(X_{\text{train}})$, obtain $\Theta$ s.t. $\min_{\Theta} J(\Theta)(X_{\text{train}})$.  
+
+Then $J_{\text{test}}(\Theta) = J(\Theta)(X_{\text{test}}) = \frac{1}{2} \sum_{i=1}^{m_{\text{test}}} (h_{\Theta}(X_i) - y_{(i)} )^2 + \frac{\lambda}{2m_{\text{test}}} \sum_{\mu=1}^d (\Theta_{\mu})^2 $.  
+
+For classification, classification error (aka 0/1 misclassification error), essentially taking a fraction, define
+\begin{equation}
+	\text{err}(h_{\Theta}(X_{(i)} ), y_{(i)} ) := \begin{cases} 1 & \text{ if } h_{\Theta}(X_{(i)} ) \geq 0.5 \text{ and } y=0 \text{ or } h_{\Theta}(X_{(i)}) < 0.5 \text{ and } y=1 \\ 
+0 & \text{ otherwise } \end{cases}
+\end{equation}
+
+\[
+J(\Theta)(X) = \frac{1}{m} \sum_{i=1}^m \text{err}(h_{\Theta}(X_{(i)}), y_{(i)} )
+\]
+
+
+cf. \href{https://www.coursera.org/learn/machine-learning/supplement/aFpD3/evaluating-a-hypothesis}{Evaluating a hypothesis}
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/QGKbr/model-selection-and-train-validation-test-sets}{Model Selection and Train/Validation/Test Sets}
+
+Given $J$, consider $J(X)(\Theta) = J_X(\Theta)$, when choosing between $\Theta$, vs. $\Theta'$, for $X=X_{\text{valid}}$.  $J_{X_{\text{valid}}}(\Theta)$ and vary $\Theta$, different choices or models of $\Theta$ (nonlinear, polynomial features, weighted by different $\Theta$, for example), while keeping $X_{\text{valid}}$ fixed, and observe changes in $J$.  
+
+e.g. for $L^2$ loss, 
+\[
+\begin{aligned}
+	& J_{\text{train}}(\Theta) \equiv  J(X_{\text{train}})(\Theta) = J_{X_{\text{train}}}(\Theta) = \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\ 
+	& J_{\text{valid}}(\Theta) \equiv  J(X_{\text{valid}})(\Theta) = J_{X_{\text{valid}}}(\Theta) = \frac{1}{2m_{\text{valid}}} \sum_{i=1}^{m_{\text{valid}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\
+	& J_{\text{test}}(\Theta) \equiv  J(\Theta)(X_{\text{test}}) = J_{\Theta}(X_{\text{test}}) = \frac{1}{2m_{\text{test}}} \sum_{i=1}^{m_{\text{test}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 
+\end{aligned}
+\]
+
+\subsection{Diagnosing bias vs. variance}
+
+cf \href{https://www.coursera.org/learn/machine-learning/lecture/yCAup/diagnosing-bias-vs-variance}{Diagnosing bias vs. variance}  If you're running a learning algorithm, and it doesn't do as well as expected, it's either, almost always,
+\begin{enumerate}
+\item bias - underfit
+\item high variance - overfit
+\end{enumerate}
+
+\subsubsection{Diagnosing bias vs. variance}
+
+Consider 
+\[
+\begin{aligned}
+	& J_{\text{train}}(\Theta) \equiv  J(X_{\text{train}})(\Theta) = J_{X_{\text{train}}}(\Theta) = \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\ 
+	& J_{\text{valid}}(\Theta) \equiv  J(X_{\text{valid}})(\Theta) = J_{X_{\text{valid}}}(\Theta) = \frac{1}{2m_{\text{valid}}} \sum_{i=1}^{m_{\text{valid}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 
+\end{aligned}
+\]
+If both $J_{X_{\text{train}}}$, $J_{X_{\text{valid}}}$ large, \textbf{bias} problem, $\Theta$ form is not complex enough.  \\
+If $J_{X_{\text{train}}}$ low, ($(h_{\Theta}(X_{\text{train}}) -y_{\text{train}})^2$ small), but $J_{X_{\text{valid}}}$ high, \textbf{high variance}, $\Theta$ too complex, overfits on $X_{\text{train}}$.  
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/4VDlf/regularization-and-bias-variance}{Regularization and Bias/Variance}  
+
+\subsubsection{e.g. Linear regression with regularization, and how $\lambda$ affects underfitting (high bias) or overfitting (high variance)}
+
+If $\lambda$ large, as $\min_{\Theta} J(\Theta)$, then $\Theta$ small, i.e. $\Theta \approx 0$, and so $h_{\Theta}(X_{(i)}) \approx 0$.  $J$ large.  \textbf{high bias (underfit)}.  \\
+If $\lambda$ small, \textbf{high variance, overfit}.  $J$ (deceptively) small.  
+
+\subsubsection{Choosing the regularization parameter $\lambda$; try an arbitrary range of values of $\lambda$, minimize $J$ with respect to $\lambda$}.  
+
+Consider
+\[
+J_{X_{\text{valid}}}(\Theta) \equiv J_{cv}(\Theta) = J(X_{\text{valid}})(\Theta) = J(X_{\text{valid}})(\Theta)(\lambda)
+\]
+Then 
+\[
+\min_{\lambda \in [0,10] }J_{X_{\text{valid}},\Theta}(\lambda)
+\]
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/Kont7/learning-curves}{Learning Curves}
+
+Consider $J=J(\Theta)(X) = J_{\Theta}(X)$ and consider $\lim_{m\to \infty} J_{\Theta}(X)$ with $X= X_i$, $\forall \, i =1,2,\dots m$.  
+
+Note that $\lim_{m_{\text{train}}\to \infty} J_{\Theta}(X_{\text{train}}) \to $ large, since $J_{\Theta}(X_{\text{train}}) \sim \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}}} (h_{\Theta}(X_{(i)}) -y_{(i)})^2$.  \\
+But $\lim_{m_{\text{valid}} \to \infty} J_{\Theta}(X_{\text{valid}}) \to 0$.  
+
+
 
 
 \section{Universal approximation theorem}
@@ -3098,6 +3253,27 @@ Simply add $\xi$ to the objective function to implement penalty (for ``too much 
   f_0(\theta,b,\mathbf{\xi}) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i
   \end{equation}
 
+cf. Andrew Ng's Support Vector Machines Large Margin Intuition, The mathematics behind large margin classification (optional), Kernels II,   
+
+\subsubsection{SVM parameters}  
+
+$C ( = \frac{1}{\lambda})$.  Large $C$: lower bias, high variance.  (small $\lambda$) \\
+Small $C$: Higher bias, low variance (large $\lambda$)
+
+For 
+\[
+\exp{ \left( - \frac{ \| x - l^{(i) } \|^2 }{ 2\sigma^2 } \right) }
+\]
+
+$\sigma^2$.  Large $\sigma^2$: Features $f_i$ vary more smoothly.  Higher bias, lower variance.  
+
+Small $\sigma^2$.  Features $f_i  $ vary less smoothly.  
+
+Lower bias, higher variance.  
+
+
+
+
 So then the total Lagrangian becomes
 \begin{equation}
   \mathcal{L}(\theta,b,\xi,\lambda,\mu) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i - \sum_{i=1}^m \lambda_i (y^{(i)}(\langle \theta,x^{(i)} \rangle +b)-1 +\xi_i ) - \sum_{i=1}^m \mu_i \xi_i
@@ -3684,9 +3860,332 @@ Recurrent neural network - creates an internal state of the network which allows
 
 cf. \href{https://www.coursera.org/learn/machine-learning/lecture/93VPG/k-means-algorithm}{Coursera Machine Learning (Ng), Week 8, K-Means Algorithm}
 
+$K$-means algorithm.  
+
+Let $K\in \mathbb{Z}^+$.  \\
+Let training set $\lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace$.  
+
+Randomly initialize $K$ cluster centroids $\mu_1,\mu_2\dots \mu_k \in \mathbb{R}^d$.  
+
+$\forall \, i = 1,2,\dots m$, 
+
+Find $c^{(i)} \, \text{ (Ng's notation) } \equiv k_{(i)} $ s.t. 
+\[
+\min_{k=1,2,\dots K} \| x_{(i)} - \mu_k \|
+\]
+$\forall \, i = 1,2,\dots m$.  
+
+$\forall \, k =1,2,\dots K$, 
+\[
+\mu_k := \frac{1}{ |C_k | } \sum_{ x_j \in C_k} x_j
+\]
+s.t. 
+\[
+\bigcup_{k=1}^K C_k = \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace
+\]
+
+Only guaranteed to converge to local minimizers ($K$-means is NP-hard), polynomial time.  
+
+Optimization objective:
+\begin{equation}
+J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_k) \equiv J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_k) = \frac{1}{m} \sum_{i=1}^m \| x_{(k)} - \mu_{ k_{(i)} } \| 
+\end{equation}
+
+So find 
+\begin{equation}
+\min_{ \substack{ c^{(1)} \dots c^{(m)} \\ \mu_1 \dots \mu_k } } J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_k) \equiv \min_{ \substack{ k_{(1)} \dots   k_{(m)} \\ \mu_1 \dots \mu_k } } J( k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_k) 
+\end{equation}
+
 \url{https://ocw.tudelft.nl/wp-content/uploads/Algoritmiek_Clustering.pdf}
 
 \url{https://github.com/serban/kmeans/blob/master/cuda_kmeans.cu}
+
+It is not possible for the cost function $J$ to sometimes increase (with number of iterations).  There must be a bug in the code.  cf. \href{https://www.coursera.org/learn/machine-learning/lecture/G6QWt/optimization-objective}{Optimization Objective}
+
+1 important example or assumption to be made is the data points are independent of each other.  There exists no dependency between any data points.   
+
+cf. \url{https://www.cse.buffalo.edu//faculty/miller/Courses/CSE633/Chandramohan-Fall-2012-CSE633.pdf}.  This also has references
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/drcBh/random-initialization}{Random Initialization}.  Randomly pick $K$ training examples from $\mathcal{X} \equiv \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace$.  Then set $\mu_1\dots \mu_K$ to these $K$ examples.  
+
+To avoid local minimization due to particular choice of $\mu_1, \dots \mu_k$, 
+
+For $i=1, \dots $ number of times to randomize, $\lbrace$ 
+Randomly initialize $K$-means \\
+Run $K$-means.  Get $c^{(1)}, \dots c^{(m)} = k_{(1)} \dots k_{(m)}$, $\mu_1\dots \mu_K$  \\
+Compute cost function (distortion) $J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_K)\equiv J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_K)$ \\
+$\rbrace$
+
+Then pick clustering that gave lowest cost $J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_K)$
+
+When $K=2-10$, random initialization of random initialization will have a huge advantage.  For $K>10$, not so much.  
+
+\subsubsection{Choosing the value of $K$}
+\href{https://www.coursera.org/learn/machine-learning/lecture/Ks0E9/choosing-the-number-of-clusters}{Choosing the Number of Clusters}
+
+Plot $J$ vs. $K$ (number of clusters).  Find where change in $J$ with increase in $K$ changes itself.  
+
+Suppose you run $K$-means using $K=3$ and $K=5$.  You find that the cost function $J$ is much higher for $K=5$ than for $K=3$.  What can you conclude? 
+
+In the run with $K=5$, $K$-means got stuck in a bad local minimum.  You should try re-running $K$-means with multiple random initializations.  
+
+International Conference on Computational Science, ICCS 2011.  Parallel $k$-Means Clustering for Quantitative Ecoregion Delineation Using Large Data Sets.  Jitendra Kumara, Richard T. Mills, Forrest M. Hoffman, William W. Hargrove.  
+\url{http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.431.3926&rep=rep1&type=pdf}
+
+\subsubsection{Parallel $k/h$-means clustering}
+From Stoffel and Belkoniene (1999) \cite{StBe1999}, 
+Fig. 1 Pseudo code of the $k$-means and $h$-means algorithm:
+\begin{lstlisting}
+function K-MeanMainLoop {
+	assign each object randomly to one cluster;
+	do {
+		for each object t in the database {
+			nC = getNearestMean(t);
+			insertIntoCluster(t,nC);
+			recalculateMeans(t,nC);
+		}
+	} while at least one t changes its cluster
+}
+\end{lstlisting}
+$k$-means.  
+
+\begin{lstlisting}
+function H-MeanMainLoop {
+	assign each object randomly to one cluster;
+	do {
+		for each object t in the database {
+			nC = getNearestMean(t);
+			insertIntoCluster(t,nC);
+		}
+	recalculateMeans(t,nC);
+	} while at least one t changes its cluster
+}
+\end{lstlisting}
+$h$-means.  
+
+
+
+
+\section{Dimensionality Reduction; Principal Component Analysis (PCA), Singular Value Decomposition (SVD)}  
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/0EJ6A/motivation-i-data-compression}{Motivation I: Data Compression}.  
+
+Examples in $\mathbb{R}^2, \mathbb{R}^3$: projection.  
+
+
+\subsection{Datapreprocessing; feature scaling, mean normalization}
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/ZYIPa/principal-component-analysis-algorithm}{Principal Component Analysis Algorithm}
+
+Given a training set $\mathcal{X} = \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \rbrace$, 
+
+\subsubsection{Mean normalization}
+
+\begin{equation}
+\mu^j = \frac{1}{m} \sum_{i=1}^m x^j_{(i)}
+\end{equation}
+Then replace $\forall \, i =1\dots m , \, \forall \, j = 1\dots d$, $x^j_{(i)}$ with $x^j_{(i)} - \mu^j$
+
+\subsubsection{Feature Scaling}
+
+
+\subsection{Principal Component Analysis (PCA) algorithm}
+
+\url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+Reduce data from $n$-dims. to $k$-dims.  
+
+Compute "covariance matrix":
+
+\begin{equation}
+\Sigma := \frac{1}{m} \sum_{i=1}^m (X_{(i)})( X_{(i)})^T
+\end{equation}
+
+Compute "eigenvalues" of matrix $\Sigma$.  
+
+2 arbitrary random variables $A,B$ with means $\mu_A,\mu_B$.  
+
+\[
+\text{cov}(A,B) = E[(A-\mu_A) (B-\mu_B)]  \qquad \, (1-dim.)
+\]
+$d$ dimensional case
+\begin{equation}
+\text{cov}(\mathbf{a},\mathbf{b}) = \frac{1}{m-1} \sum_{i=1}^m  (\mathbf{a}-\mathbf{\mu}_A) (\mathbf{b}- \mathbf{\mu}_B)^T = \frac{1}{m-1} \sum_{i=1}^m ( a - \mu_A)_i (b-\mu_B)_j = (\text{cov}(a,b))_{ij}
+\end{equation}
+
+Given data at vectors $\mathcal{X} = \lbrace \mathbf{x}_{(1)}, \mathbf{x}_{(2)}, \dots \mathbf{x}_{(m)} \in \mathbb{R}^d \rbrace$ with mean normalization \emph{done already }  $\mu  \equiv \mu_X = 0 $)
+
+We want covariance 
+\begin{equation}
+	\text{cov}(\mathcal{X})_{jk} \equiv \Sigma_{\mathcal{X}} \equiv \Sigma = \frac{1}{m} \sum_{i=1}^m (X_{(i)} )_j (X_{(i)})_k 
+\end{equation}
+Given data as $R$-module
+\begin{equation}
+\begin{aligned}
+	& X = X_{ i \mu} \qquad \, i = 1\dots m , \, \mu= 1\dots d \\ 
+	& \text{cov}(X)_{\mu \nu } = \Sigma_X \equiv \Sigma = \frac{1}{m} X^T_{ \mu k } X_{k \nu}
+\end{aligned}
+\end{equation}
+
+Suppose $Y:= XP$ for unitary (orthogonal) $P\equiv U$.  Now 
+\[
+X_{i\mu} P_{\mu \nu } = Y_{i\nu} , \qquad \, i = 1,\dots m , \, \nu = 1\dots k , \text{ where } d \equiv n \geq k
+\]
+Then
+\begin{equation}
+	\text{cov}(Y) = \frac{1}{m} Y^T Y = \frac{1}{m} P^T X^T XP = P^T \text{cov}{(X)} P
+\end{equation}
+$\forall \, $ real, symmetric (Hermitian) matrix $A\in \text{Mat}_{\mathbb{K}}(N,N)$, $A = U\Lambda U^T (=U\Lambda U^{\dag})$, $\Lambda = \text{diag}(\lambda_{11}, \dots \lambda_{NN} )$; also $U^T AU = \Lambda$.  
+
+Clearly $(\Sigma_X)^T = \frac{1}{m} (X^TX)^T = \frac{1}{m} X^T X = \Sigma_X$.  So $\text{cov}(Y)$ is a \emph{diagonal matrix}.  
+
+Then
+\begin{equation}
+\begin{gathered}
+	(\Sigma_X P)_{\mu \nu } = ( \Sigma_X )_{\mu \rho } P_{\rho \nu} = (P \text{cov}(Y) )_{\mu \nu } = P_{\mu \rho} \lambda_{ \nu \nu} \delta_{\rho \nu } = \lambda_{ \nu \nu} P_{\mu \nu }
+\end{gathered}
+\end{equation}
+
+The columns of $P$ are eigenvectors (that can be normalized) called \emph{principal components} $p_{\mu}$ of $X$, and construct 
+\[
+P = \left( \begin{matrix} p_1  & p_2  &  \dots & p_d \end{matrix} \right)
+\]
+
+cf. Holl (2016), \url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+\begin{theorem}
+	Principal component $\mathbf{p}_i$ describes axis orthogonal to $p_1 \dots p_{i-1}$ along which original data set has largest variance.  
+\end{theorem}
+
+\begin{proof}
+	Along axis $v\in \mathbb{R}^d$, project $X$ onto $v$.  $Xv = X_{i\nu } v_{\nu}$, \, $i=1\dots m$, $\nu = 1\dots d$.  
+
+\[
+\begin{gathered}
+\text{var}(Xv) = \frac{1}{m-1} (Xv)^T Xv = \frac{1}{m} (Xv)^T_{ \  \  i} (Xv)_i = \frac{1}{m} (v^T X^T)_i X_{i\nu} v_{\nu} = \frac{1}{m} ( v_{\mu} X_{i \mu} ) X_{i\nu } v_{\nu} = v_{\mu} \Sigma_{\mu \nu } v_{\nu}
+\end{gathered}
+\]	
+Normalize the variance
+\begin{equation}
+	\text{var}(Xv) \equiv \text{var}_v(X) = \frac{ v_{\mu} \Sigma_{\mu \nu }v_{\nu } }{ v_{\mu} v_{\mu} } = \frac{ v^T \Sigma v}{ v^T v} 
+\end{equation}
+ 
+Maximize $\text{var}_v(X)$.  
+
+Goal, under given orthogonality constraints, i.e. 
+\[
+v = \text{argmax}_{ \substack{ v\neq 0 \\ v\perp U_{i-1} } } \frac{ v^T \text{cov}(X) v}{ v^T v} 
+\]
+where $U_{i-1}$ is subspace of $\mathbb{R}^d$, spanned by $p_1$ through $p_{i-1}$, called Rayleigh quotient of $\text{cov}(X)$ and $v$.  
+
+Recall \emph{Courant-Fischer minimax thm., Courant-Fischer thm.}: 
+
+\begin{theorem}[Courant-Fischer (minimax) thm.]
+Given $A\in \text{Mat}_{\mathbb{K}}(n,n)$, $A$ Hermitian.  
+
+Let $\lbrace S_k^{\alpha} \rbrace_{\alpha \in I_k} \equiv $ set of all $k$-dim. linear subspaces of $\mathbb{C}^n$, , eigenvalues of $A$, $\lambda_1 \leq \dots \leq \lambda_n$.  
+
+Then 
+\begin{equation}
+\begin{aligned}
+	& \min_{\alpha \in I_k} \max_{ x\in S_k^{\alpha} \backslash \lbrace 0 \rbrace } \frac{ \langle Ax,x \rangle }{  \| x\|^2  } = \lambda_k \\ 	
+	& \max_{\alpha \in I_{n-k+1} } \min_{x  \in S^{\alpha}_{n-k+1}  \backslash \lbrace 0 \rbrace  } \frac{ \langle Ax,x \rangle }{ \| x \|^2 } = \lambda_k
+\end{aligned}
+\end{equation}
+\end{theorem} 
+
+With Courant-Fischer minimax thm., 
+\begin{equation}\label{Eq:PCA01maxvar}
+\max_{ \substack{ v\neq 0 \\ v\perp U_{i-1} } } \frac{ v^T \text{cov}(X) v}{ v^T v} = \lambda_i 
+\end{equation}
+Now, it remains to prove that eigenvector corresponding to $\lambda_i$, fulfills Eq. \ref{Eq:PCA01maxvar}.  
+
+Recall eigenvalue eqn. 
+\[
+\begin{gathered}
+	\Sigma p = \lambda_i p \text{ i.e. } \Sigma_{\mu \rho } p_{\rho \nu} = \lambda_{ \nu \nu} p_{\mu \nu } \\ 
+ \frac{ p_{\nu}^T \text{cov}(X) p_{\nu } }{ p_{\nu}^T p_{\nu} } = \frac{ p_{\nu}^T \Sigma p_{\nu} }{ p_{\nu}^T p_{\nu} } = \frac{ \lambda_{\nu}  p_{\nu}^T p_{\nu} }{ p_{\nu}^T p_{\nu} } = \lambda_{\nu}
+\end{gathered}
+\]
+$\Longrightarrow$ so eigenvectors $\mathbf{p}_{\nu}$ (principal component) maintain maximal variance.  
+
+
+\end{proof}
+
+PCA also allows us to eliminate dims. from dataset while minimizing error incurred, i.e. losing least amount of data.  
+
+\begin{theorem}\label{Thm:PCAminerr}
+PCA minimize total squared error experienced by eliminating all but $\widehat{n}$ of the $n$-dims.  
+\end{theorem}
+
+\begin{proof}
+Represent $\forall \, $ data pt. $x_{(i)} \in \mathbb{K}^n$ as linear combination of orthonormal basis $\mathbf{b}_1 , \dots \mathbf{b}_n$  
+\[
+\mathbf{x}_{(i)} = \sum_{j=1}^n \alpha_{ij} \mathbf{b}_j
+\]
+
+Consider $\widehat{x}_{(i)} = \sum_{j=1}^{\widehat{n}} \alpha_{ij}\mathbf{b}_j , \quad \, \widehat{n} \leq n $
+
+\begin{equation}
+\text{err}_{\widehat{n}} = \sum_{i=1}^m \|  \mathbf{x}_{(i)} - \widehat{x}_{(i)} \|^2 = \sum_{i=1}^m \| \sum_{j=\widehat{n}+1}^n \alpha_{ij} \mathbf{b}_j \|^2 = \sum_{i=1}^m \sum_{ j = \widehat{n}+1}^n \| \alpha_{ij} \|^2 
+\end{equation}
+Since $\mathbf{b}_j$ orthonormal, $\mathbf{b}_j^T \mathbf{b}_j = \sum_{\mu = 1}^n (b_j)_{\mu}(b_j)^{\mu} = 1$, or 
+\[
+\begin{gathered}
+\mathbf{b}_j^T \mathbf{b}_k =\sum_{\mu = 1}^n (b_j)_{\mu} (b_k)^{\mu} = \delta_{jk} \\
+	\alpha_{ij} = \langle \mathbf{x}_{(i)} , \mathbf{b}_j \rangle = \mathbf{b}_j^T \mathbf{x}_{(i)} = (\mathbf{x}_{(i)}^T ) \mathbf{b}_j = x_{(i)}^{\mu} (b_j)_{\mu} 
+\end{gathered}
+\]
+
+Then
+\[
+\begin{gathered}
+\sum_{i=1}^m \sum_{j= \widehat{n}+1}^n \| \alpha_{ij} \|^2 = \sum_{i=1}^m \sum_{j =\widehat{n}+1}^n x^{\mu}_{(i)} (b_j)_{\mu} x^{\nu}_{(i)} (b_j)_{\nu} = \sum_{j=\widehat{n}+1}^n (b_j)_{\mu} \sum_{i=1}^m x^{\mu}_{(i)} x^{\nu}_{(i)} (b_j)_{\nu} = m\sum_{j=\widehat{n}+1}^n (b_j)_{\mu} \Sigma_{\mu \nu} (b_j)_{\nu} = \\
+= m \sum_{j=\widehat{n}+1}^n \frac{b_j^T \Sigma b_j}{ b_j^T b_j }
+\end{gathered}
+\]
+If $\widehat{n} = n-1$, then error minimized by $b_n = p_n $ (Courant-Fishcer Thm.).  
+
+Because $b_j$ orthogonality by def., conclude that $b_j=p_j$ minimized $\text{err}_{\widehat{n}}  \quad \, \forall \, \widehat{n}$  
+\end{proof}
+
+
+Applications of PCA are exploratory data analysis, through dimensional reduction, dimensional reduction itself, and regression problems, since by Thm. 2, \ref{Thm:PCAminerr}, then using PCA minimizes the error incurred by the regression. Holl (2016), \url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+
+
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/X8JoQ/reconstruction-from-compressed-representation}{Reconstruction from Compressed Representation}  
+
+Suppose we run PCA with $k=n$, so that the dimension of the data is not reduced at all.  (This is not useful in practice but is a good thought exercise.)  Recall that the percent/fraction of variance retained is given by: $\frac{ \sum_{i=1}^k S_{ii} }{ \sum_{i=1}^n S_{ii} }$.  Which of the following will be true?  
+
+$U_{\text{reduce}} $ will be an $n\times n$ matrix.  $x_{\text{approx}} = x$ for every example $x$.  The percentage of variance retained will be 100 \%.  
+
+To choose $k$ (number of principal components), do Singular Value Decomposition (SVD).  With $S$, the diagonal matrix, and its diagonal entries, $s_{\nu \nu}$, $\nu = 1\dots n\equiv d$, then, for given $k$, 
+\[
+\begin{gathered}
+	\frac{ \frac{1}{m} \sum_{i=1}^m \| \mathbf{x}_{(i)} - \mathbf{x}_{\text{approx}, (i)} \|^2 }{ \frac{1}{m} \sum_{i=1}^m \| \mathbf{x}_{(i)} \|^2 } = 1- \frac{ \sum_{\nu =1}^{ \widehat{n} }  \frac{ \langle p_{\nu} , \Sigma p_{\nu}  \rangle }{ \langle p_{\nu} , p_{\nu} \rangle } }{ \sum_{\nu=1}^n \frac{ \langle p_{\nu} , \Sigma p_{\nu} \rangle }{ \langle p_{\nu}, p_{\nu} \rangle } } = 1 - \frac{ \sum_{\nu=1}^{\widehat{n} } s_{\nu \nu } }{ \sum_{i=1}^n s_{\nu \nu } }
+\end{gathered}
+\]
+
+\subsubsection{Supervised learning speedup}  cf. \href{https://www.coursera.org/learn/machine-learning/lecture/RBqQl/advice-for-applying-pca}{Advice for Applying PCA}.   Run PCA only on training set.  
+
+
+\textbf{Bad use of PCA: To prevent overfitting}.  
+
+It's not what PCA does.  Use regularization instead to address overfitting.  
+
+\textbf{PCA is sometimes used where it shouldn't be}.  (e.g. Design of ML system).  
+
+How about doing the whole thing without using PCA?
+
+Before implementing PCA, first try running whatever you want to do with the original/raw data $x_{(i)}$.  Only if that doesn't dow hat you want, then implement PCA and consider using $z_{(i)}$.  
+
+
+
+Ng uses PCA to speed up learning algorithms alot..  
+
+Also, remember compress data, reduce memory data requirements.  
 
 \section{PageRank}  
 
@@ -4088,6 +4587,12 @@ Prof. Dr. Michael Bader, with Alexander P\"{o}ppl, Valeriy Khakhutskyy (Tutorial
 
 \bibitem{AnNg}
 Andrew Ng.  \href{https://www.coursera.org/learn/machine-learning/home/welcome}{Machine Learning}.  \href{https://www.coursera.org}{coursera}
+
+
+\bibitem{StBe1999}
+Kilian Stoffel and Abdelkader Belkoniene.  \emph{Parallel $k/h$-Means Clustering for Large Data Sets}.  Euro-Par'99, LNCS 1685, pp. 1451-1454, 1999.  Springer-Verlag Berlin Heidelberg 1999
+
+\url{https://grid.cs.gsu.edu/~wkim/index_files/papers/parkh.pdf}
 
 \bibitem{theano}
 Theano Development Team. \href{http://arxiv.org/pdf/1605.02688.pdf}{“Theano: A Python framework for fast computation of mathematical expressions”}. 
