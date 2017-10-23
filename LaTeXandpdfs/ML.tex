@@ -10,7 +10,9 @@
 
 \documentclass[10pt]{amsart}
 \pdfoutput=1
-\usepackage{mathtools,amssymb,lipsum,caption}
+%\usepackage{mathtools,amssymb,lipsum,caption}
+\usepackage{mathtools,amssymb,caption}
+
 
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -155,6 +157,41 @@ and so further, I think the idea is
 (\mathbb{R}^{ |I_{\text{test}}|})^d \times \mathbb{R}^{ |I_{\text{test}}|} & \to \mathbb{R}
   \end{aligned}
 \]
+
+\section{Data Input pipeline that I propose}  
+
+The motivation is that I want to load onto the CPU RAM (because even if the data comes from sensors and not from data on a hard drive, it'll have to be loaded to the CPU RAM before going out to the device GPU RAM) as fast as possible.  It appears that reading in binary \verb|char|s is the fastest way in C++ (C++14,etc.).  If you think about, if we're representing 32-bit float values (4 bytes wide, \verb|np.float32| in Python Numpy) in 32 bits or 4 bytes, then they are just \verb|char|s.  Then just read in directly as \verb|char|s.  
+
+The data input pipeline I propose is the following:  
+
+\begin{equation}
+\begin{tikzpicture}
+\matrix (m) [matrix of math nodes, row sep=2em, column sep=4em, minimum width=1.75em]
+{
+	& \text{binary} &   \\
+	& hdf5   & 	\\
+%	& \verb|.csv| & \boxed{ \verb|std::ifstream| (C++14)  } \\
+	& \verb|.csv| &   \verb|std::ifstream| (C++14)   \\
+	\verb|.csv|, \verb|","|  &  \text{Pandas } DataFrame & \text{NumPy }  array \\
+	\verb|.csv|, \text{tab}  &   & \\
+	\verb|.csv|, \text{whitespace}  &  &  \\	
+	not hdf5, not \text{binary}, not \verb|.csv|  &   & \\
+};
+\path[->]
+(m-1-2) edge node [above] {$$} (m-3-3)
+(m-2-2) edge node [above] {$$} (m-3-3)
+(m-3-2) edge node [above] {$H$} (m-3-3)
+(m-4-1) edge node [above] {Pandas} (m-4-2)
+(m-4-2) edge node [above] { nparray.values } (m-4-3)
+(m-5-1) edge node [above] {Pandas} (m-4-2)
+(m-6-1) edge node [left] {Pandas} (m-4-2)
+(m-7-1) edge node [right] {Pandas} (m-4-2)
+(m-4-3) edge node [right] { nparray.tofile } (m-3-3)
+;
+\end{tikzpicture}
+\end{equation}
+
+
 
 \part{Introduction}
 
@@ -1203,6 +1240,9 @@ cf. Machine Learning - Introduction, from Coursera.  Dr. Andrew Ng.
       \end{itemize}
     \end{itemize}
   \end{enumerate}
+
+\section{Linear Regression}
+
 cf. Linear Regression with One Variable
 
 cf. \href{https://www.coursera.org/learn/machine-learning/lecture/db3jS/model-representation}{Model Representation; Week 1 Linear Regression with 1 Variable, Coursera Machine Learning, Ng}
@@ -1233,6 +1273,8 @@ define a \emph{cost function}
 \begin{equation}
   J(\theta) = \frac{1}{2 m} \sum_{i=1}^m (h_{\theta}(x_i) - y_i)^2 
 \end{equation}
+
+In \href{http://cs229.stanford.edu/notes/cs229-notes1.pdf}{CS229 Lecture notes, Andrew Ng, for Supervised learning, Part I Linear Regression}, this least-squares cost function gives rise to the \textbf{ordinary least squares} regression model.  
 
 Find
 \[
@@ -1550,6 +1592,35 @@ In this case, this is the so-called "1-hot vector representation."
 
 For example, suppose $K=10$.  We have 10 different "classes" or "categories" that a data point can belong in.  For a concrete example, take a digit that could be from 0 or to 9.  For any finite set we have an isomorphism to a subset of the integers; choose $\lbrace 0 ,1,\dots K-1\rbrace$.  Then we can represent the output or "target" $y$ to either take values from $\lbrace 0 ,1,\dots K-1\rbrace$ or turn it equivalently into a vector of length $K$ of $0$s and $1$s: e.g. if the digit is 3, then we can represent $y^{(i)}$ as $[0,0,0,1,0,0,0,0,0,0]$.  In this way, we can use \emph{activation} functions such as $\tanh$, softmax, sigmoid functions, etc. to get our DNN to compute an estimate of the probability that an input example belongs to each of the "categories".    
 
+
+
+
+
+
+\section{Activation functions}
+
+From wikipedia article on "Activation Function":
+
+\[
+\begin{gathered}
+\begin{aligned}
+\text{sigmoid } & f(x) = \frac{1}{ 1+ \exp{(-x)} } \in (0,1) & \begin{aligned} f'(x) & = -(1+e^{-x})^{-2} (-e^{-x}) \\ & = \left( \frac{1}{f(x)} -1\right)(f(x))^2 \\ & = f(x)(1-f(x)) \end{aligned} \\
+	& f\in C^{\infty}  &  \\
+& f(x) = \tanh{(x)} = \frac{2}{1+ e^{-2x}} -1 \in (-1,1) & f'(x) = \text{sech}^2(x) = 1-(f(x))^2 \in (0,1] \\ 
+& f\in C^{\infty} & \\
+& f(x) = \arctan{(x)} \in \left( \frac{-\pi}{2}, \frac{\pi}{2} \right) & f'(x) = \frac{1}{x^2 + 1} \in \left(\frac{1}{ \left( \frac{\pi}{2} \right)^2 + 1}, 1 \right) \\ 
+& f\in C^{\infty} & \\
+\begin{aligned} & \text{ReLu}, \\ & \text{Rectified linear unit} \end{aligned} & f(x) = \begin{cases} 0 & \text{ for } x < 0 \\ x & \text{ for } x \geq 0 \end{cases} \in [0,\infty) & f'(x) = \begin{cases} 0 & \text{ for } x <0 \\ 1 & \text{ for } x \geq 0 \end{cases} \\ 
+& f \in C^1 &  \\ 
+\text{Gaussian} & \begin{aligned} & f(x) = e^{-x^2} \in (0,1] ) \text{ or } \\
+& f(x) = \exp{ \left( - \frac{ (x-c)^2}{ 2\sigma^2} \right) } \in (0,1] \end{aligned} &  f'(x) = -2xe^{-x^2} \\
+& f\in C^{\infty} &
+\end{aligned}
+\end{gathered}
+\]
+
+
+
 \section{Feedforward; Feedforward Propagation and Prediction}
 
 Given ordered sequence of linear transformations $L$, $L\geq 2$,
@@ -1603,6 +1674,72 @@ a^{(l)} & (a_0^{(l)} = 1, a^{(l)} ) & z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
   \end{equation}
 
 \section{Backpropagation; Backpropagation algorithm}
+
+\subsection{Backpropagation, gradient descent, for linear regression}  
+
+Consider the particular form for linear regression:  
+\[
+\begin{gathered}
+	\widehat{y}_{(i)}  \equiv h_{ (\Theta,b)}(X_{(i)}) \equiv h_{\Theta}(X_{(i)})=X_{(i)}\Theta + b \in \mathbb{R}^K \text{ or } \mathbb{R}^{s_1}, \qquad \, \forall \, i =1,2,\dots m (\text{index of input data $X$})
+\end{gathered}
+\]
+
+Ng \cite{CS229} gives the gradient descent algorithm: 
+
+\[
+\Theta_{\mu}^{ \  \  \nu} \equiv \Theta_{\mu}^{ \  \  \nu}(t+1) := \Theta_{\mu}^{ \  \  \nu} - \alpha \frac{\partial }{ \partial \Theta_{\mu}^{ \  \  \nu} } J(\Theta,b)
+\]
+with $\alpha \equiv $ learning rate.  
+
+And so given, with regularization term for full generality, $J(\Theta,b)$ of the form 
+\[
+\begin{aligned}
+J(\Theta,b) & = \frac{1}{m} \sum_{i=1}^m J(\Theta,b; X_{(i)}, y_{(i)}) + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2 = \\ 
+& =  \frac{ 1}{m} \sum_{i=1}^m \frac{1}{2} ( h_{(\Theta,b)}(X_{(i)}) - y_{(i)})^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2
+\end{aligned}
+\]
+with $h_{(\Theta,b)}(X_{(i)}) = x_{(i)}^{\mu} \Theta_{\mu}^{ \  \  \nu} + b^{\nu}$.  
+
+
+
+As a programming note, anticipating that we have to do $\sum_{i=1}^m$ summation, employ a \emph{struct of arrays (SOA)}.  
+
+\begin{equation}
+\frac{\partial J(\Theta,b)}{ \partial \Theta_{\mu}^{ \  \  \nu} } = \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)} )^{\nu} (X_{(i)})^{\mu} + \lambda \Theta_{\mu}^{ \  \  \nu} = \frac{1}{m} X(\widehat{y}(X) - y)^T + \lambda \Theta
+\end{equation}
+Notice how the matrix form $X(\widehat{y}(X) -y)^T$ works precisely because of the right-multiplication (order).  
+
+The update is as follows, in component and matrix form:
+\begin{equation}
+\begin{gathered}
+\Theta_{\mu}^{\  \  \nu}(t+1) := \Theta_{\mu}^{\  \  \nu}(t) - \alpha \frac{ \partial J( \Theta,b) }{ \partial \Theta_{\mu}^{\  \  \nu}}  = \Theta_{\mu}^{\  \  \nu}(t) - \alpha \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)})^{\nu} (X_{(i)})^{\mu} + \lambda \Theta_{\mu}^{\  \  \nu} \\
+\Theta(t+1) := \Theta(t) -\alpha \text{grad}_{\Theta}J = \Theta - \alpha \left( \frac{1}{m} X(\widehat{y}(X)-y)^T + \lambda \Theta \right) \\
+b^{\nu}(t+1) := b^{\nu}(t) - \alpha \frac{ \partial J }{ \partial b^{\nu}} = b^{\nu}(t) - \alpha \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)})^{\nu} 
+\end{gathered}
+\end{equation}
+
+\subsection{Backpropagation, gradient descent, for artificial Neural Networks (NN)}
+Recall the feedforward (i.e. composition of R-modules and Hadamard functions), and the resulting parameters (for the model).  These parameters belong to a space of parameters which in in itself is a differentiable manifold (so-called matrix manifold):  
+\begin{equation}
+\begin{gathered}
+(\Theta,b) \in (\mathbf{\Theta},\mathbf{b}) \equiv \text{Mat}_{\mathbb{R}}(s_0,s_1) \times \mathbb{R}^{s_1} \times \text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2} \times \dots \times \text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} = \prod_{l=1}^L \text{Mat}(s_{l-1},s_l)\times \mathbb{R}^{s_l}  
+\end{gathered}
+\end{equation}
+ 
+Also, recall what the cost functional does: 
+\begin{equation}
+\begin{aligned} 
+& J:(\mathbf{\Theta}, \mathbf{b}) \to L((\mathbb{K}^d)^m,(\mathbb{K}^K)^m)   \\
+& J:(\Theta,b) \mapsto J(\Theta,b) \equiv J_{(\Theta,b)} \equiv J_{\Theta}
+\end{aligned}
+\end{equation}
+where \\
+$d = $ number of features \\
+$K=$ dim. of output \\
+$m=$ number of training examples \\
+$\mathbb{K} =$ field or set.  
+
+
 
 First, do feedforward on \emph{each} training example $t$, i.e.
 \begin{equation}
@@ -1907,7 +2044,213 @@ a^{(l)} &   z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
 
 See also \href{https://web.stanford.edu/class/cs294a/}{CS294A/CS294W Deep Learning and Unsupervised Feature Learning Winter 2011}
 
-\subsection{Cost functional}
+\subsection{Backpropagation, gradient of the $L^2$ cost functional (linear regression)for gradient descent, for a DNN, in detail (chain rule on compositions)}
+
+Given dataset $X,y$:
+\[
+\begin{aligned}
+& X = X_i^{\  \  \mu} \in \text{Mat}_{\mathbb{R}}(m,d) \quad & i = 0,1, \dots m-1, \, \mu = 0,1,\dots d-1 \\ 
+& y = y_i^{\  \  k} \in \text{Mat}_{\mathbb{R}}(m,K) \quad & i=0,1,\dots m-1, \, k=0,1,\dots K-1
+\end{aligned}
+\]
+
+Start with 2 Axons (i.e. 1 "hidden" layer), $L=2$. Then $l=1,2$ (in general, $l=1,2,\dots L$).  
+
+For $l=1$, 
+\[
+\begin{aligned}
+& (z^{(1)})_i^{\  \  j_1} := X_i^{\  \  \mu} (\Theta^{(1)})_{\mu}^{\  \  j_1} + (b^{(1)})^{j_1}  & \in \text{Mat}_{\mathbb{R}}(m,s_1) \\
+& (a^{(1)})_i^{\  \  j_1} := \psi^{(1)}( X_i^{\  \  \mu} (\Theta^{(1)})_{\mu}^{\  \  j_1} + (b^{(1)})^{j_1} ) & \in \text{Mat}_{\mathbb{R}}(m,s_1)
+\end{aligned}
+\]  
+Likewise, for $l=2$, 
+\[
+\begin{aligned}
+& (z^{(2)})_i^{\  \  j_2} := (a^{(1)})_i^{\  \  j_1} (\Theta^{(2)})_{j_1}^{\  \  j_2} + (b^{(2)})^{j_2}  & \in \text{Mat}_{\mathbb{R}}(m,s_2) \\
+& (a^{(2)})_i^{\  \  j_2} := \psi^{(2)}( (a^{(1)})_i^{\  \  j_1} (\Theta^{(2)})_{j_1}^{\  \  j_2} + (b^{(2)})^{j_2} ) & \in \text{Mat}_{\mathbb{R}}(m,s_2)
+\end{aligned}
+\]  
+
+Immediately, we can generalize:
+\begin{equation}
+\begin{aligned}
+& (z^{(l)})_i^{\  \  j_l} := (a^{(l-1)})_i^{\  \  j_{l-1}} (\Theta^{(l)})_{j_{l-1}}^{\  \  j_l} + (b^{(l)})^{j_l}  & \in \text{Mat}_{\mathbb{R}}(m,s_l) \\
+& (a^{(l)})_i^{\  \  j_l} := \psi^{(l)}( (a^{(l-1)})_i^{\  \  j_{l-1}} (\Theta^{(l)})_{j_{l-1}}^{\  \  j_l} + (b^{(l)})^{j_l} ) & \in \text{Mat}_{\mathbb{R}}(m,s_l)
+\end{aligned}
+\end{equation}
+
+In general, for the $L^2$-norm cost functional $J$, the form is the following: 
+\begin{equation}
+\begin{aligned}
+J(\Theta,b)  =  \frac{ 1}{m} \sum_{i=1}^m \frac{1}{2} ( a^{(L)}_i - y_{(i)})^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2
+\end{aligned}
+\end{equation}
+and this is also true:
+\begin{equation}
+\frac{ \partial }{ \partial (\Theta^{(l)})_j^{\  \  k} } \frac{1}{2} (a_i^{(L)} - y_{(i)})^2 = (a_i^{(L)} - y_{(i)}) \frac{\partial a_i^{(L)} }{ \partial (\Theta^{(l)})_j^{\  \  k} }
+\end{equation}
+
+For the sake of implementation, write out the $L^2$-norm cost functional $J$ explicitly:  
+\[
+\begin{gathered}
+	\Delta \equiv \Delta_i^{\  \  k} \equiv (a_i^{(L)} - y_{(i)}) \equiv (a_i^{(L)} - y_{(i)})^k \in \text{Mat}_{\mathbb{R}}(m,K) \\ 
+	 (a_i^{(L)} - y_{(i)})^2 \equiv (\Delta_i)^2 = \sum_{k=0}^{K-1}( \Delta_i^{\  \  k})^2 = \sum_{k=0}^{K-1} ((a_i^{(L)} - y_{(i)})^k)^2   \\
+\sum_{i=1}^m (\Delta_i)^2 = \sum_{i=1}^m \sum_{k=0}^{K-1} (\Delta_i^{\  \  k})^2 = \sum_{i=1}^m \sum_{k=0}^{K-1} ((a_i^{(L)} - y_{(i)})^k)^2
+\end{gathered}
+\]
+
+To get some intuition, let's do some simple examples.  Let $l=L$ and $L=2$:
+\[
+\frac{\partial a_i^{(L)} }{ \partial (\Theta^{(L)})_j^{\  \  k} } = \frac{ \partial \psi^{(L)} }{ \partial z^{(L)} }(z^{(L)} )  \frac{ \partial z^{(L)} }{ \partial (\Theta^{(L)})_j^{\  \  k} }= \frac{ \partial \psi^{(L)} }{ \partial ( z^{(L)})^k } (z^{(L)}  ) (a^{(L-1)})_i^{\  \  j} 
+\]
+
+Since $\psi^{(l)} \cdot$ is element-wise Hadamard operation, its dependence is only upon 1 element and we should exploit this fact.  
+
+\[
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  m} } = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial (\Theta^{(L)})_j^{\  \  m} }  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }(z^{(L)} )   = (a^{(L-1)})_i^{\  \  j} \delta^{mk}  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\]
+or 
+\[
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  k} } =  (a^{(L-1)})_i^{\  \  j}   \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\]
+For $l=L-1$, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-1)})_j^{\  \  m} } = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial (\Theta^{(L-1)})_j^{\  \  m} }  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }   =  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-1)})_j^{\  \  m} } \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( a_i^{(L-1)})^{    j_{L-1}} }     \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+= (a^{(L-2)})_i^{\  \  j} \delta^{m j_{L-1}}  \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}    \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\ 
+= (a^{(L-2)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  m } }{ \partial (z^{(L-1)})_i^{\  \   m } }  (\Theta^{(L)})_{ m }^{\  \  k}    \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered}
+\]
+
+Doing 1 more, for $l=L-2$, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-2)})_j^{\  \  m} } =  \left[  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-2)})_j^{\  \  m} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+= \left[ (a^{(L-3)})_i^{\  \  j} \delta^{m j_{L-2}}  \frac{ \partial (\psi^{(L-2)})_i^{\  \  j_{L-2} } }{ \partial (z^{(L-2)})_i^{\  \  j_{L-2}} }  (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+=  (a^{(L-3)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-2)})_i^{\  \  m } }{ \partial (z^{(L-2)})_i^{\  \   m } }  (\Theta^{(L-1)})_{ m }^{\  \  j_{L-1}}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }   (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered}
+\]
+
+And so in general, for $l=1,2,\dots L$, 
+\begin{equation}
+\boxed{ \begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  m} } =   (a^{(L-l)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-(l-1))})_i^{\  \  m } }{ \partial (z^{(L-(l-1))})_i^{\  \   m } }  (\Theta^{(L-(l-2))})_m^{\  \  j_{(L-(l-2))}}      \frac{ \partial (\psi^{(L-(l-2))})_i^{\  \  j_{(L-(l-2))} } }{ \partial (z^{(L-(l-2))})_i^{\  \  j_{(L-(l-2))}} } \cdot \\
+\cdot \prod_{l' = l-3}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi^{(L-l')})_i^{\  \  j_{L-l'} } }{ \partial (z^{(L-l')})_i^{\  \  j_{L-l'}} } \cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered} 
+}
+\end{equation}
+
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-l))})_j^{\  \  m} } =  \left[  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-l)})_j^{\  \  m} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } = \\
+= (a^{(L-1-l)}_i)^{\  \  j}    \frac{ \partial (\psi_i^{(L-1-(l-1))})^{\  \  m } }{ \partial (z_i^{(L-(l-1))})^{\  \   m } }  (\Theta^{(L-(l-1))})_m^{\  \  j_{(L-(l-1))}}      \frac{ \partial (\psi_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))} } }{ \partial (z_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))}} } \cdot \\
+\cdot \prod_{l' = l-3}^{l'=1} (\Theta^{(L-1-l')})_{ j_{L-1-(l'+1)}}^{\  \  j_{L-1-l'}}      \frac{ \partial (\psi^{(L-1-l')}_i)^{\  \  j_{L-1-l'} } }{ \partial (z^{(L-1-l')}_i)^{\  \  j_{L-1-l'}} } \cdot (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}      \frac{ \partial (\psi_i^{(L-1)})^{\  \  j_{L-1} } }{ \partial (z_i^{(L-1)})^{\  \  j_{L-1}} } \cdot \\ 
+\cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } = \\
+= (a^{(L-1-l)}_i)^{\  \  j}    \frac{ \partial (\psi_i^{(L-1-(l-1))})^{\  \  m } }{ \partial (z_i^{(L-(l-1))})^{\  \   m } }  (\Theta^{(L-(l-1))})_m^{\  \  j_{(L-(l-1))}}      \frac{ \partial (\psi_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))} } }{ \partial (z_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))}} } \cdot \\
+\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi^{(L-l')}_i)^{\  \  j_{L-l'} } }{ \partial (z^{(L-l')}_i)^{\  \  j_{L-l'}} } \cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } 
+\end{gathered}
+\]
+
+
+As a check, consider the $L=1$ case with no activation function, \emph{linear regression}, 
+\[
+\frac{ \partial (a_i^{(1)})^k }{ \partial \Theta_j^{\  \  m}} = (a^{(0)}_i)^j \delta^{mk} 1
+\]
+And so,
+\[
+\begin{gathered}
+\frac{\partial J}{ \partial ( \Theta^{(l)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)} ) \frac{\partial a_i^{(L)} }{ \partial ( \Theta^{(l)})_j^{\  \  p} } + \lambda ( \Theta^{(l)})_j^{\  \  p} \equiv \frac{1}{m} \sum_{i=1}^m \Delta _i \frac{\partial a_i^{(L)} }{ \partial  ( \Theta^{(l)})_j^{\  \  p} } + \lambda ( \Theta^{(l)})_j^{\  \  p} =\\
+= \frac{1}{m} \sum_{i=1}^m \sum_{k=0}^{K-1} \Delta_i^{\  \  k} \frac{ \partial ( a_i^{(L)})^k }{ \partial ( \Theta^{(l)})_j^{\  \  p}} + \lambda ( \Theta^{(l)})_j^{\  \  p} 
+\end{gathered}
+\]
+
+For the linear regression case, we have
+\[
+\Delta_i^{\  \  k} (a_i^{(0)})^j \delta^{pk} = \Delta_i^{\  \  p} (a_i^{(0)})^j 
+\]
+or explicitly 
+\[
+\sum_{k=0}^{K-1} \Delta_i^{\  \  k} (a_i^{(0)})^j \delta^{pk} = \Delta_i^{\  \  p} (a_i^{(0)})^j
+\]
+and so, for this linear regression case,  
+\begin{equation}
+\frac{ \partial J}{ \partial ( \Theta)_j^{\  \  p}} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  p} (a_i^{(0)})^j + \lambda \Theta_j^{\  \  p}
+\end{equation}
+
+\subsubsection{Backpropagation of bias $b$, for $L^2$ norm cost functional $J$}
+
+\[
+\begin{gathered}
+\begin{aligned}
+& \frac{ \partial }{ \partial (b^{(l)})^p} \frac{1}{2} (a_i^{(L)} - y_{(i)})^2 = (a_i^{(L)} - y_{(i)} ) \frac{ \partial a_i^{(L)} }{ \partial (b^{(l)})^p } \\
+& \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L)})^p}  = \delta_p^{\  \  k} \frac{ \partial ( \psi^{(L)})_i^{\  \  k} }{ \partial (z^{(L)})_i^{\  \  k} } = \frac{ \partial ( \psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p})}  \\
+ & \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-1)})^p} = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( b^{(L-1)})^p} \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1}} }{ \partial (b^{(L-1)})^p }  \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( a^{(L-1)})^{j_{L-1}}  }\frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }  =  \delta^{p j_{L-1}} \frac{ \partial ( \psi_i^{(L-1)})^{j_{L-1}} }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{j_{L-1}}^{\  \  k}   \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+ & = \frac{ \partial ( \psi_i^{(L-1)})^{ p } }{ \partial (z^{(L-1)})_i^{\  \  p } }  ( \Theta^{(L)})_{ p }^{\  \  k}   \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }   \\
+& \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-2)})^p} = \frac{ \partial (a_i^{(L-1)})^{j_{L-1}} }{ \partial (b^{(L-2)})^p }  (\Theta^{(L)})_{j_{L-1}}^{\  \  k}  \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }  = \\
+& = \frac{ \partial ( \psi_i^{(L-2)})^{ p } }{ \partial (z^{(L-2)})_i^{\  \  p } }  ( \Theta^{(L-1)})_{ p }^{\  \  j_{L-1}}    \frac{\partial (\psi^{(L-1)}_i)^{j_{L-1}} }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }   (\Theta^{(L)})_{j_{L-1}}^{\  \  k}  \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{aligned}
+\end{gathered}
+\]
+Suppose 
+\begin{equation}
+\boxed{ \begin{gathered}
+\frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-(l-1))})^p} = \frac{ \partial ( \psi_i^{(L-(l-1))})^{ p } }{ \partial (z^{(L-(l-1))})_i^{\  \  p } }  ( \Theta^{(L-(l-2))})_{ p }^{\  \  j_{L- (l-2)  }} \prod_{l'=l-2}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l'+1)})^{ j_{L-l'} } }{ \partial (z^{(L-l'+1)})_i^{\  \  j_{L-l'} } }  ( \Theta^{(L-l'+1)})_{ j_{L-l'} }^{\  \  j_{L-l'+1}} \cdot \\
+\cdot \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       
+\end{gathered} }
+\end{equation}
+
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-l)})^p} = \frac{ \partial ( a_i^{(L-1)})^{ j_{L-1} } }{ \partial (b^{(L-l)})^{    p } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }   = \\
+=  \frac{ \partial ( \psi_i^{(L-l))})^{ p } }{ \partial (z^{(L-l))})_i^{\  \  p } }  ( \Theta^{(L-(l-1))})_{ p }^{\  \  j_{L- (l-1)  }} \prod_{l'=l-2}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l')})^{ j_{L-1-l'} } }{ \partial (z^{(L-l')})_i^{\  \  j_{L-1-l'} } }  ( \Theta^{(L-l')})_{ j_{L-1-l'} }^{\  \  j_{L-l'}} \cdot \\
+\cdot \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-2} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-2} } }  ( \Theta^{(L-1)})_{ j_{L-2} }^{\  \  L-1} \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } } ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       = \\
+= \frac{ \partial ( \psi_i^{(L-l))})^{ p } }{ \partial (z^{(L-l))})_i^{\  \  p } }  ( \Theta^{(L-(l-1))})_{ p }^{\  \  j_{L- (l-1)  }} \prod_{l'=l-1}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l'+1)})^{ j_{L-l'} } }{ \partial (z^{(L-l'+1)})_i^{\  \  j_{L-l'} } }  ( \Theta^{(L-l'+1)})_{ j_{L-l'} }^{\  \  j_{L-l'+1}} \cdot  \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       
+\end{gathered}
+\]
+
+For the linear regression case, 
+\[
+\frac{ \partial J}{ \partial b^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k } \delta_{pk} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  p}
+\]
+
+\subsection{Backpropagation for the Negative log likelihood function, for logistic regression}
+
+Recall the full expression for the cost functional of a deep neural network (DNN or ANN) using the negative log likelihood function (or so-called cross-entropy function):  
+
+\begin{equation}
+J(\Theta,b) = \frac{1}{m} \sum_{k=1}^K \left[ -y^k_{(i)} \log{ (h^k_{(\Theta,b)}(x_{(i)}) )} - (1-y^k_{(i)}) \log{ (1-h^k_{(\Theta,b)}(x_{(i)}) )}  \right] -  \frac{\lambda}{2m} \left[ \sum_{l=1}^L \sum_{j_{l-1} =0}^{ s_{l-1} -1} \sum_{j_l =0}^{s_l - 1} \left[ ( \Theta^{ (l)} )_{j_l}^{j_{l-1}} \right]^2 \right]
+\end{equation}
+
+Define the so-called cross-entropy function $s$:
+\[
+\begin{aligned}
+& s:[0,1]^2 \to \mathbb{R} \\ 
+& s\equiv s( y^k_{(i)}, \widehat{y}_{(i)}^k ) = -y^k_{(i)} \log{ (\widehat{y}^k_{(i)})} - (1-y^k_{(i)}) \log{ (1-\widehat{y}^k_{(i)})}  
+\end{aligned}
+\]
+$s$ notation was chosen to relate it, as it's formally equivalent, to entropy, whether the physical definition of entropy or Shannon entropy.  There ought to be a (succinct) mathematical discussion of how $s$ relates to Shannon entropy and to information theory.  Otherwise, from the physical point of view, the form of $s$ was chosen because of its mathematical properties ($s$ should be additive when we add 2 systems, $A$,$B$ together, etc.)
+
+Taking the partial derivative and keeping in mind that $\widehat{y}_{(i)}^k = \widehat{y}_{(i)}^k(\Theta,b)$, (i.e. only $\widehat{y}_{(i)}^k$ is dependent upon $(\Theta,b)\in (\mathbf{\Theta},\mathbf{b})$, and nothing else, not $y^k_{(i)}$, the given output data, 
+\[
+\begin{gathered}
+\frac{\partial s}{ \partial (\Theta^{ (L-(l-1))})_j^{\  \  p} } = -y^k_{(i)} \frac{1}{ \widehat{y}_{(i)}^k  } \frac{\partial \widehat{y}_{(i)}^k }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p } } +  \frac{ (1- y^k_{ (i)}) }{ 1- \widehat{y}_{(i)}^k } \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \\
+= \frac{ - y^k_{(i)} (1- \widehat{y}^k_{(i)}) + \widehat{y}^k_{(i)} (1-y^k_{(i)}) }{ \widehat{y}^k_{(i)} ( 1 - \widehat{y}^k_{(i)}) } \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} }
+\end{gathered}
+\] 
+In summary, 
+\begin{equation}
+\frac{\partial s}{ \partial (\Theta^{ (L-(l-1))})_j^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} }
+\end{equation}
+
+
+Clearly, 
+\begin{equation}
+\frac{\partial s}{ \partial (b^{ (L-(l-1))})^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial ( b^{(L-(l-1))})^{\  \  p} }
+\end{equation}
+
+\section{Cost functional}
 
 The cost function $J$ is really a cost \emph{functional}, to first input in the output values $y$.  So
 \begin{equation}
