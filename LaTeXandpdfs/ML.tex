@@ -2220,7 +2220,7 @@ For the linear regression case,
 Recall the full expression for the cost functional of a deep neural network (DNN or ANN) using the negative log likelihood function (or so-called cross-entropy function):  
 
 \begin{equation}
-J(\Theta,b) = \frac{1}{m} \sum_{k=1}^K \left[ -y^k_{(i)} \log{ (h^k_{(\Theta,b)}(x_{(i)}) )} - (1-y^k_{(i)}) \log{ (1-h^k_{(\Theta,b)}(x_{(i)}) )}  \right] -  \frac{\lambda}{2m} \left[ \sum_{l=1}^L \sum_{j_{l-1} =0}^{ s_{l-1} -1} \sum_{j_l =0}^{s_l - 1} \left[ ( \Theta^{ (l)} )_{j_l}^{j_{l-1}} \right]^2 \right]
+J(\Theta,b) = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \left[ -y^k_{(i)} \log{ (h^k_{(\Theta,b)}(x_{(i)}) )} - (1-y^k_{(i)}) \log{ (1-h^k_{(\Theta,b)}(x_{(i)}) )}  \right] +  \frac{\lambda}{2m} \left[ \sum_{l=1}^L \sum_{j_{l-1} =0}^{ s_{l-1} -1} \sum_{j_l =0}^{s_l - 1} \left[ ( \Theta^{ (l)} )_{j_l}^{j_{l-1}} \right]^2 \right]
 \end{equation}
 
 Define the so-called cross-entropy function $s$:
