@@ -2210,12 +2210,147 @@ Indeed, by induction,
 \end{gathered}
 \]
 
+Also, for the form that includes the Kronecker delta, 
+\begin{equation}
+\begin{gathered}
+\boxed{ \frac{ \partial (a_i^{(L)})^k }{ \partial (b^{(L-(l-1))})^p} = \delta^{pj_{L-(l-1)}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{L-l'})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}}  \frac{ d ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi^{(L)}) }{ \partial (z_i^{(L)})^{\  \  k } }     }
+\end{gathered}
+\end{equation}
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{ \partial (a_i^{(L)})^k }{ \partial (b^{(L-l)})^p } = \frac{ \partial ( a_i^{(L-1)})^{ j_{L-1} } }{ \partial (b^{(L-l)})^{    p } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }   = \\ 
+= \delta^{pj_{L-l}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-1-l')}}{ d(z_i^{L-1-l'})^{j_{L-1-l'}} } (\Theta^{(L-l')})_{j_{L-1-l'}}^{\  \  j_{L-l'}}  \frac{ d ( \psi^{(L-2)}) }{ \partial (z_i^{(L-2)})^{  j_{L-2} } }  ( \Theta^{(L-1)})_{ j_{L-2} }^{\  \  j_{L-1}} \frac{ \partial ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{\  \  j_{L-1} } } ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }  = \\
+= \delta^{pj_{L-l}} \prod_{l'=l}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{L-l'})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}}  \frac{ d ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi^{(L)}) }{ \partial (z_i^{(L)})^{\  \  k } } 
+\end{gathered} \]
+
 For the linear regression case, 
 \[
 \frac{ \partial J}{ \partial b^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k } \delta_{pk} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  p}
 \]
 
-\subsection{Backpropagation for the Negative log likelihood function, for logistic regression}
+
+%% EY : 20171024 
+Gathering all that we've learned so far, let's write out the full expression for the partial derivatives we desire for gradient descent:  
+\begin{equation}
+\boxed{ 
+	\begin{gathered}
+	\frac{ \partial J }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)})^k \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } + \lambda  \Theta^{(L-(l-1))})_j^{\  \  p} \text{ with } \begin{aligned} & j = 0,1\dots s_{(L-(l-1)-1)}-1 \\ & p = 0,1,\dots s_{(L-(l-1))} -1 \end{aligned}
+	\end{gathered}	
+}
+\end{equation}
+\subsubsection{(Numerical) Implementation of Backpropagation for a DNN with $L^2$ norm cost functional $J$; using tensor contraction as Matrix multiplication}
+I was inspired by tensor contraction as Matrix multiplication from Bridgeman and Chubb (2016) \cite{BrCh2016}, pp. 6, 1.2.4 Grouping and splitting.  However, I will develop this idea from scratch here.  
+Consider the $L=1$ case.  Instead of the linear regression case, generalize to the application of an \emph{activation} function that acts element-wise (it's a Hadamard operation), $\psi^{(L)}$.  Then
+\[
+\begin{gathered}
+\frac{ \partial J}{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)})^k (a^{(L-1)})_i^{\  \  j} \delta^{pk} \frac{ \partial (\psi^{(L)})_i^{\  \  k} }{ \partial (z^{(L)})_i^{\  \  k} } + \lambda (\Theta^{(L)})_j^{\  \  p}  = \\
+\equiv \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \   p} (a^{(L-1)})_i^{\  \  j} \frac{ \partial ( \psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p} } + \lambda (\Theta^{(L)})_j^{\  \  p} = \frac{1}{m} (a^{(L-1)})^T \left( \Delta \odot \frac{ \partial (\psi^{(L)}) }{ \partial (z^{(L)})}  \right) + \lambda (\Theta^{(L)})_j^{\  \  p}
+\end{gathered}
+\]
+Ignoring the regularization term (i.e. term with $\lambda$), the very last equation is the "matrix form", with the contraction over $i=1, \dots m$ implied, ${\, }^T$ denoting the transpose, and $\odot$ denoting the Hadamard product (element-wise operations), which is what we must equip the $R$-module.  
+\[
+\begin{aligned}
+& \frac{\partial J}{ \partial (\Theta^{(L)})_j^{\  \  p}} \in \text{Mat}_{\mathbb{R} }(s_{L-1}, s_L) \\ 
+& (a^{(L-1)})_i^{\  \ j } \in \text{Mat}_{\mathbb{R}}(m,s_{L-1}) \\
+& \Delta_i^{\  \  p} \in \text{Mat}_{\mathbb{R}}(m,s_L) \\ 
+& \frac{ \partial (\psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p} } \in \text{Mat}_{\mathbb{R}}(m,s_L) 
+\end{aligned}
+\]
+And so to try to generalize this expression, looking at Eq. \ref{Eq:DNNpartialaL_noKroneckerdelta}, we actually want to save the Kronecker delta and do the summation later.  Trying first a few easy examples, 
+\begin{equation}
+\begin{aligned}
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  p} } = (a_i^{(L-1)})^j \delta_{pk} \frac{\partial (\psi_i^{(L)})}{\partial (z_i^{(L)})^k} \\ 
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-1)})_j^{\  \  p} } = (a^{(L-2)}_i)^j \delta^{pj_{L-1}} \frac{\partial (\psi_i^{(L-1)})^{j_{L-1}}}{\partial (z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } \\
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-2)})_j^{\  \  p} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-2)})_j^{\  \  p} } \frac{ \partial (z^{(L)}_i)^k }{ \partial (a_i^{(L-1)})^{j_{L-1}} } \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+& = (a^{(L-3)}_i)^j \delta^{pj_{L-2}} \frac{\partial (\psi_i^{(L-2)})^{j_{L-2}}}{\partial (z_i^{(L-2)})^{j_{L-2}} } (\Theta^{(L-1)})_{j_{L-2}}^{\  \  j_{L-1}} \frac{ \partial (\psi_i^{(L-1)})^{j_{L-1} }}{ \partial (z_i^{(L-1)})^{j_{L-1} } } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k }
+\end{aligned}
+\end{equation}
+and so in general, for $l=1,2,\dots L$, 
+\begin{equation}\label{Eq:DNNpartialaL_noKroneckerdelta}
+\boxed{ \begin{gathered}
+	\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } =   (a_i^{(L-l)})^{\  \  j} \delta^{pj_{L-(l-1)} }   \frac{ \partial (\psi_i^{(L-(l-1))})^{j_{L-(l-1)} } }{ \partial (z_i^{(L-(l-1))})^{j_{L-(l-1)} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} }
+	\end{gathered} 
+}
+\end{equation}
+Indeed, with proof by induction, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-l)})_j^{\  \  p} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-l)})_j^{\  \  p} }  (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+= (a_i^{(L-l-1)})^{\  \  j} \delta^{pj_{L-l} }   \frac{ \partial (\psi_i^{(L-l)})^{j_{L-l} } }{ \partial (z_i^{(L-l)})^{j_{L-l} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-1-l')})_{ j_{L-l'}}^{\  \  j_{L-(l'+1)}}      \frac{ \partial (\psi_i^{(L-1-l')})^{\  \  j_{L-1-l'} } }{ \partial (z_i^{(L-1-l')})^{ j_{L-1-l'}} } (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}      \frac{ \partial (\psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z_i^{(L-1)})^{  j_{L-1}} }
+(\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+=    (a_i^{(L-(l+1)})^{\  \  j} \delta^{pj_{L-l} }   \frac{ \partial (\psi_i^{(L-l)})^{j_{L-l} } }{ \partial (z_i^{(L-l)})^{j_{L-l} } } 	\cdot \prod_{l' = l-1}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} }
+\end{gathered}
+\]
+Armed with these expressions, let us continue with simple examples, base cases, for $L=2$.  In this case,  
+\[
+\begin{gathered}
+\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \   k} \frac{\partial (a_i^{(L)})^k}{\partial (\Theta^{(L-1)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} (a_i^{(L-2)})^j \delta^{pj_{L-1}} \frac{ d\psi^{ (L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{d\psi^{(L)} }{ d(z_i^{(L)})^k} = \\
+= \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K (\Delta \odot \frac{d\psi}{ d(z_i^{(L)})} )_i^{\  \  k} ((\Theta^{(L)})^T)_i^{\  \  j_{L-1}} (a_i^{(L-2)})^j \delta^{pj_{L-1}} \frac{d\psi^{(L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } = \\
+= \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi}{ d(z^{(L)})} (\Theta^{(L)})^T )_i^{\  \  j_{L-1}} \frac{d\psi^{(L-1)}}{ d(z_i^{(L-1)})^{j_{L-1}} } (a_i^{(L-2)})^j \delta^{pj_{L-1}} = \frac{1}{m} \sum_{i=1}^m ( (\Delta \odot \frac{d\psi}{ d(z^{(L)})} (\Theta^{(L)})^T ) \odot \frac{d\psi^{(L-1)} }{ d(z^{(L-1)}) } )_i^{\  \  j_{L-1}} \delta^{pj_{L-1}} (a_i^{(L-2)})^j = \\
+=\frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi}{d (z_k^{(L)})} (\Theta^{(L)}) \odot \frac{d\psi^{(L-1)}}{ d(z^{(L-1)})} )_i^{\  \  p} (a_i^{(L-2)})^j = \\
+= \frac{1}{m} (a^{(L-2)})^T \left( \left( \Delta \odot \frac{d\psi^{(L)} }{ d(z_i^{(L)})} (\Theta^{(L)})^T \right) \odot \frac{d\psi^{(L-1)}}{dz^{(L-1)}} \right)
+\end{gathered}
+\]
+Doing 1 more case, $L=3$, 
+\[
+\begin{gathered}
+\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} \frac{ \partial (a_i^{(L)})^k }{ \partial ( \Theta^{(L-2)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k}   (a^{(L-3)}_i)^j \delta^{pj_{L-2}} \frac{\partial (\psi_i^{(L-2)})^{j_{L-2}}}{\partial (z_i^{(L-2)})^{j_{L-2}} } (\Theta^{(L-1)})_{j_{L-2}}^{\  \  j_{L-1}} \frac{ \partial (\psi_i^{(L-1)})^{j_{L-1} }}{ \partial (z_i^{(L-1)})^{j_{L-1} } } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+= \frac{1}{m} \sum_{i=1}^m \left( \Delta \odot \frac{d\psi}{dz^{(L)}} (\Theta^{(L)})^T \odot \frac{d\psi^{(L-1)} }{ dz^{(L-1)}} (\Theta^{(L-1)} )^T \odot \frac{d\psi^{(L-2)} }{ dz^{(L-2)}} \right)_i^{\  \  p} (a_i^{(L-3)} )^j = \\
+= \frac{1}{m} (a^{(L-3)})^T \Delta \odot \frac{d\psi }{dz^{(L)}} (\Theta^{(L)})^T \odot \frac{d\psi^{(L-1)} }{ dz^{(L-1)}} (\Theta^{(L-1)})^T \odot \frac{d\psi^{(L-2)} }{dz^{(L-2)}}
+\end{gathered}\]
+And so in general, 
+\begin{equation}
+\begin{gathered}
+\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} \frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } =  \\
+= \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k}  (a_i^{(L-l)})^{\  \  j} \delta^{pj_{L-(l-1)} }   \frac{ \partial (\psi_i^{(L-(l-1))})^{j_{L-(l-1)} } }{ \partial (z_i^{(L-(l-1))})^{j_{L-(l-1)} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} } = \\
+= \frac{1}{m} \sum_{i=1}^m (a_i^{(L-l)})^j \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)}} (\Theta^{(L)})^T \left( \bigodot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right)_i^{\  \  p} = \\
+=\boxed{ \frac{1}{m} (a^{(L-l)})^T  \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)}} (\Theta^{(L)})^T \left( \bigodot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right)  
+}
+\end{gathered}
+\end{equation}
+Finally, we know how to take the gradient of $J$ of this particular form:  
+\begin{equation}\label{Eq:DNN_gradJ_L2norm_Thetas}
+\boxed{\begin{gathered}
+	\frac{ \partial J }{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} (a^{(L-1)})^T \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } \right) + \lambda \Theta^{(L)}	\\
+	\frac{ \partial J }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} (a^{(L-l)})^T \left( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)} } (\Theta^{(L)})^T \left( \odot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')}}{dz^{(L-l') } } (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{(L-(l-1)) } }{ dz^{(L-(l-1)) } } \right) + \lambda \Theta^{(L-(l-1)) } \\
+	\forall \, l = 2,\dots L 
+	\end{gathered}}
+\end{equation}
+Similarly, for the bias $b$ term, starting from the first cases, 
+\[
+\begin{gathered}
+\frac{ \partial J }{ \partial (b^{(L)})^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k}  \frac{ \partial (a_i^{(i)})^k }{ \partial (b^{(L)})^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta_p^{\  \  k} \frac{d \psi^{(L)} }{ d(z_i^{(L)})^k} = \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi^{(L)}}{ dz^{(L)}} )_i^{\  \  k} \delta_p^{\  \  k} = \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi^{(L)}}{ dz^{(L)}})_i^{\  \  p} = \\
+= \frac{1}{m} \sum_{i=1}^m ((\Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T)^p_{\  \  i } \delta_{i1} = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}
+\end{gathered}
+\]
+Note the very last line, where we used a "trick" with the Kronecker delta, with just how the Kronecker delta is defined to behave, in order to insert the "column" vector of 1s.  And so 
+\begin{equation}
+\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}  
+\end{equation}
+Generalizing, 
+\[
+\begin{gathered}
+\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta^{pj_{L-(l-1)}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{(L-l')})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}} \frac{d \psi^{(L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{ \  \ k } \frac{d\psi^{(L)} }{ d(z_i^{(L)})^k }  = \\
+= \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta^{pj_{L-(l-1)}} \frac{d\psi^{(L-(l-1))} }{ d(z_i^{(L-(l-1))})^{j_{L-(l-1)}} }    \prod_{l'=l-1}^{l'=2} (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{ \  \  j_{L-(l'-1)}} \frac{d \psi^{(L-(l'-1))} }{ d (z_i^{(L-(l'-1))})^{j_{L-(l'-1)}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k } \frac{d \psi^{(L)} }{ d(z_i^{(L)})^k}	= \\
+= \frac{1}{m} \sum_{i=1}^m \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]_i^{\  \  j_{L-(l-1)}} \delta^{p j_{L-(l-1)}} = \\
+= \frac{1}{m} \sum_{i=1}^m \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]_i^{\  \  p }  = \\
+= \frac{1}{m}  1_{1\times m } \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } 
+\end{gathered}
+\]
+and so 
+\begin{equation}\label{Eq:DNN_gradJ_L2norm_bs}
+\boxed{ \begin{gathered}
+	\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}   \\
+	\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
+	\forall \, l = 2,3, \dots L
+	\end{gathered} }
+\end{equation}
+
+
+
+%\subsection{Backpropagation for the Negative log likelihood function, for logistic regression}
+\subsection{Gradients (Jacobian) for the Negative log likelihood function, for logistic regression}
 
 Recall the full expression for the cost functional of a deep neural network (DNN or ANN) using the negative log likelihood function (or so-called cross-entropy function):  
 
@@ -2249,6 +2384,44 @@ Clearly,
 \begin{equation}
 \frac{\partial s}{ \partial (b^{ (L-(l-1))})^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial ( b^{(L-(l-1))})^{\  \  p} }
 \end{equation}
+
+
+%% EY : 20171024
+Gathering all that we've learned so far, let's write out the full expression for the partial derivatives we desire for gradient descent:  
+\begin{equation} %\label{Eq:}
+%\boxed{ 
+\begin{gathered}
+\frac{ \partial J }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )}  \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } + \lambda  \Theta^{(L-(l-1))})_j^{\  \  p} \text{ with } \begin{aligned} & j = 0,1\dots s_{(L-(l-1)-1)}-1 \\ & p = 0,1,\dots s_{(L-(l-1))} -1 \end{aligned}
+\end{gathered}	
+%}
+\end{equation}
+%% END of EY : 20171024
+If we treat this term as a matrix:
+\[
+\frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \in \text{Mat}_{\mathbb{R}}(m,K) 
+\]
+and since $\Delta_i^{\  \   k} := \widehat{y}_{(i)}^k - y_{(i)}^k \in \text{Mat}_{\mathbb{R}}(m,K)$, we can formally plug into Eqns. \ref{Eq:DNN_gradJ_L2norm_Thetas}, \ref{Eq:DNN_gradJ_L2norm_bs} to obtain 
+\[
+\begin{gathered}
+\frac{ \partial J }{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} (a^{(L-1)})^T \left(  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } \right) + \lambda \Theta^{(L)}	\\
+\frac{ \partial J }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} (a^{(L-l)})^T \left(  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)}}{dz^{(L)} } (\Theta^{(L)})^T \left( \odot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')}}{dz^{(L-l') } } (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{(L-(l-1)) } }{ dz^{(L-(l-1)) } } \right) + \lambda \Theta^{(L-(l-1)) } \\
+\forall \, l = 2,\dots L 
+\end{gathered}
+\]
+and 
+\[
+\begin{gathered}
+\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}   \\
+\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
+\forall \, l = 2,3, \dots L
+\end{gathered}\]
+Let us, only for notational convenience, when knowing that we are dealing with the case of logistic regression, using $s$, 
+\[
+\Delta_i^{\  \  k } \equiv \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )}
+\]
+
+
+
 
 \section{Cost functional}
 
@@ -4854,6 +5027,12 @@ Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever.  "An Empirical Exploration o
 
 \bibitem{GBC2016}
 Ian Goodfellow, Yoshua Bengio, and Aaron Courville.  \textbf{Deep Learning} (Adaptive Computation and Machine Learning series).  The MIT Press (November 18, 2016).  
+
+
+% EY : 20171024  
+\bibitem{BrCh2016}
+Jacob C. Bridgeman, Christopher T. Chubb.  \emph{Hand-waving and Interpretive Dance: An Introductory Course on Tensor Networks}.  
+\href{arXiv:1603.03039}{https://arxiv.org/abs/1603.03039} [quant-ph]
 
 
 
