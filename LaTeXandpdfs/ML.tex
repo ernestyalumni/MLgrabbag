@@ -13,6 +13,7 @@
 %\usepackage{mathtools,amssymb,lipsum,caption}
 \usepackage{mathtools,amssymb,caption}
 
+
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
@@ -94,11 +95,6 @@
  }
 %\lstlistoflistings
 
-\begin{abstract}
-	Everything about Machine Learning.  
-\end{abstract}
-
-
 \maketitle
 
 
@@ -119,6 +115,9 @@ youtube      : ernestyalumni \\
 
 \begin{multicols*}{2}
 
+\begin{abstract}
+Everything about Machine Learning.  
+\end{abstract}
 
 \part{Data; Data Wrangling, Data cleaning, Web crawling, Data input}
 
@@ -158,6 +157,41 @@ and so further, I think the idea is
 (\mathbb{R}^{ |I_{\text{test}}|})^d \times \mathbb{R}^{ |I_{\text{test}}|} & \to \mathbb{R}
   \end{aligned}
 \]
+
+\section{Data Input pipeline that I propose}  
+
+The motivation is that I want to load onto the CPU RAM (because even if the data comes from sensors and not from data on a hard drive, it'll have to be loaded to the CPU RAM before going out to the device GPU RAM) as fast as possible.  It appears that reading in binary \verb|char|s is the fastest way in C++ (C++14,etc.).  If you think about, if we're representing 32-bit float values (4 bytes wide, \verb|np.float32| in Python Numpy) in 32 bits or 4 bytes, then they are just \verb|char|s.  Then just read in directly as \verb|char|s.  
+
+The data input pipeline I propose is the following:  
+
+\begin{equation}
+\begin{tikzpicture}
+\matrix (m) [matrix of math nodes, row sep=2em, column sep=4em, minimum width=1.75em]
+{
+	& \text{binary} &   \\
+	& hdf5   & 	\\
+%	& \verb|.csv| & \boxed{ \verb|std::ifstream| (C++14)  } \\
+	& \verb|.csv| &   \verb|std::ifstream| (C++14)   \\
+	\verb|.csv|, \verb|","|  &  \text{Pandas } DataFrame & \text{NumPy }  array \\
+	\verb|.csv|, \text{tab}  &   & \\
+	\verb|.csv|, \text{whitespace}  &  &  \\	
+	not hdf5, not \text{binary}, not \verb|.csv|  &   & \\
+};
+\path[->]
+(m-1-2) edge node [above] {$$} (m-3-3)
+(m-2-2) edge node [above] {$$} (m-3-3)
+(m-3-2) edge node [above] {$H$} (m-3-3)
+(m-4-1) edge node [above] {Pandas} (m-4-2)
+(m-4-2) edge node [above] { nparray.values } (m-4-3)
+(m-5-1) edge node [above] {Pandas} (m-4-2)
+(m-6-1) edge node [left] {Pandas} (m-4-2)
+(m-7-1) edge node [right] {Pandas} (m-4-2)
+(m-4-3) edge node [right] { nparray.tofile } (m-3-3)
+;
+\end{tikzpicture}
+\end{equation}
+
+
 
 \part{Introduction}
 
@@ -1206,6 +1240,9 @@ cf. Machine Learning - Introduction, from Coursera.  Dr. Andrew Ng.
       \end{itemize}
     \end{itemize}
   \end{enumerate}
+
+\section{Linear Regression}
+
 cf. Linear Regression with One Variable
 
 cf. \href{https://www.coursera.org/learn/machine-learning/lecture/db3jS/model-representation}{Model Representation; Week 1 Linear Regression with 1 Variable, Coursera Machine Learning, Ng}
@@ -1236,6 +1273,8 @@ define a \emph{cost function}
 \begin{equation}
   J(\theta) = \frac{1}{2 m} \sum_{i=1}^m (h_{\theta}(x_i) - y_i)^2 
 \end{equation}
+
+In \href{http://cs229.stanford.edu/notes/cs229-notes1.pdf}{CS229 Lecture notes, Andrew Ng, for Supervised learning, Part I Linear Regression}, this least-squares cost function gives rise to the \textbf{ordinary least squares} regression model.  
 
 Find
 \[
@@ -1499,6 +1538,89 @@ cf. 1.4 Regularized cost function
   \end{gathered}
 \]
 
+\section{Logistic Regression; "logits"}  
+
+Consider the problem of dealing with \emph{categorical} data.  I don't like the use of this name because it shouldn't be confused with category theory, or categories in category theory.  Nor should classes or types be used since they mean specific things in software design/object-oriented programming.  
+
+Nevertheless, reasonably, we should assume a finite number of "categories" or "classes", $K$.  They have no \emph{ordering} properties, despite the fact that we will soon label the classes with numbers $0,1,\dots K-1$ or $1,2,\dots K$ (complicating things is how Python and C/C++ uses so-called $0$-based counting, i.e. counting from $0$, as opposed to how we're used to $1$-based counting).  So "categorical" or "classes" labels or names belong to the category of all finite sets, $\textbf{FiniteSets}$.  
+
+The point I want to make is that in nearly all practical applications, we have to go from $\textbf{FiniteSets}$ to $\textbf{Vec}$: 
+\begin{equation}
+\begin{gathered}
+\textbf{FiniteSets} \to \textbf{Vec}   \\
+	\lbrace a_{i_1} \dots a_{i_K} \rbrace_{i_1\dots i_K \in \mathcal{I} } \to \lbrace 0,1,\dots K-1 \rbrace \to \delta_{ij}
+\end{gathered}
+\end{equation}
+
+\subsection{Negative log likelihood function, for logistic regression}
+
+cf. \href{http://deeplearning.net/tutorial/logreg.html}{Classifying MNIST digits using Logistic Regression}  
+
+Look at the code \href{http://deeplearning.net/tutorial/code/logistic_sgd.py}{logistic sgd.py}.  Look at the function \verb|negative_log_likelihood|.  The math for that is this:
+
+\begin{equation}
+            \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =
+            \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|}
+                \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
+            \ell (\theta=\{W,b\}, \mathcal{D})
+\end{equation}
+
+Consider the cost function $J$ for a deep neural network (i.e. artificial neural network) for the case of "categorical" or "discrete" data, 
+\begin{equation}
+\begin{gathered}
+	J(\mathbf{\Theta}) = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \left[ -y_k^{(i)} \log{ ((h_{\theta}(x^{(i)} ) )_k ) } - (1-y_k^{(i)} ) \log{ (1- (h_{\theta}(x^{(i)} ) )_k ) } \right] + \\
++ \frac{\lambda}{2m} \left[  \sum_{l=1}^L \sum_{j_{l-1}=0}^{s_{l-1}-1} \sum_{ j_l=0}^{ s_l-1} \left[  ( \Theta^{j_{l-1}}_{ \  \  \  j_l} )^{(l)}   \right]^2 \right] \qquad \, \text{ where } \\
+(\Theta^j_{ \  \  k} )^{(l)}  \in (\mathbb{K}^{ s_{l-1}} ) \otimes ( \mathbb{K}^{s_l} )^* \cong \text{Mat}_{\mathbb{K}}(s_{l-1},s_l)  \qquad \, \text { for } \\
+\begin{aligned}
+	& l=1,2,\dots L \\ 
+& j = 0,1,\dots s_{l-1} - 1 \\ 
+& k = 0,1,\dots s_l - 1 
+\end{aligned}
+\end{gathered}
+\end{equation}
+Now for some particular $i$, $i\in 0,1,\dots m-1$ (where $m$ is the total number of input samples, i.e. "training examples" or "batch"), 
+\[
+y^{(i)} \in \lbrace 0 ,1 \rbrace^K 
+\]
+which represents the label or "class", or so-called "category" that the data pt. belongs to.  
+
+The values that $y^{(i)}$ takes is such that if for the $i$th data sample, with it belongs specifically in "class" that's labeled $k'=0,1,\dots K-1$, then 
+\[
+y^{(i)}_k = \delta_{kk'}
+\]
+In this case, this is the so-called "1-hot vector representation."  
+
+For example, suppose $K=10$.  We have 10 different "classes" or "categories" that a data point can belong in.  For a concrete example, take a digit that could be from 0 or to 9.  For any finite set we have an isomorphism to a subset of the integers; choose $\lbrace 0 ,1,\dots K-1\rbrace$.  Then we can represent the output or "target" $y$ to either take values from $\lbrace 0 ,1,\dots K-1\rbrace$ or turn it equivalently into a vector of length $K$ of $0$s and $1$s: e.g. if the digit is 3, then we can represent $y^{(i)}$ as $[0,0,0,1,0,0,0,0,0,0]$.  In this way, we can use \emph{activation} functions such as $\tanh$, softmax, sigmoid functions, etc. to get our DNN to compute an estimate of the probability that an input example belongs to each of the "categories".    
+
+
+
+
+
+
+\section{Activation functions}
+
+From wikipedia article on "Activation Function":
+
+\[
+\begin{gathered}
+\begin{aligned}
+\text{sigmoid } & f(x) = \frac{1}{ 1+ \exp{(-x)} } \in (0,1) & \begin{aligned} f'(x) & = -(1+e^{-x})^{-2} (-e^{-x}) \\ & = \left( \frac{1}{f(x)} -1\right)(f(x))^2 \\ & = f(x)(1-f(x)) \end{aligned} \\
+	& f\in C^{\infty}  &  \\
+& f(x) = \tanh{(x)} = \frac{2}{1+ e^{-2x}} -1 \in (-1,1) & f'(x) = \text{sech}^2(x) = 1-(f(x))^2 \in (0,1] \\ 
+& f\in C^{\infty} & \\
+& f(x) = \arctan{(x)} \in \left( \frac{-\pi}{2}, \frac{\pi}{2} \right) & f'(x) = \frac{1}{x^2 + 1} \in \left(\frac{1}{ \left( \frac{\pi}{2} \right)^2 + 1}, 1 \right) \\ 
+& f\in C^{\infty} & \\
+\begin{aligned} & \text{ReLu}, \\ & \text{Rectified linear unit} \end{aligned} & f(x) = \begin{cases} 0 & \text{ for } x < 0 \\ x & \text{ for } x \geq 0 \end{cases} \in [0,\infty) & f'(x) = \begin{cases} 0 & \text{ for } x <0 \\ 1 & \text{ for } x \geq 0 \end{cases} \\ 
+& f \in C^1 &  \\ 
+\text{Gaussian} & \begin{aligned} & f(x) = e^{-x^2} \in (0,1] ) \text{ or } \\
+& f(x) = \exp{ \left( - \frac{ (x-c)^2}{ 2\sigma^2} \right) } \in (0,1] \end{aligned} &  f'(x) = -2xe^{-x^2} \\
+& f\in C^{\infty} &
+\end{aligned}
+\end{gathered}
+\]
+
+
+
 \section{Feedforward; Feedforward Propagation and Prediction}
 
 Given ordered sequence of linear transformations $L$, $L\geq 2$,
@@ -1553,6 +1675,72 @@ a^{(l)} & (a_0^{(l)} = 1, a^{(l)} ) & z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
 
 \section{Backpropagation; Backpropagation algorithm}
 
+\subsection{Backpropagation, gradient descent, for linear regression}  
+
+Consider the particular form for linear regression:  
+\[
+\begin{gathered}
+	\widehat{y}_{(i)}  \equiv h_{ (\Theta,b)}(X_{(i)}) \equiv h_{\Theta}(X_{(i)})=X_{(i)}\Theta + b \in \mathbb{R}^K \text{ or } \mathbb{R}^{s_1}, \qquad \, \forall \, i =1,2,\dots m (\text{index of input data $X$})
+\end{gathered}
+\]
+
+Ng \cite{CS229} gives the gradient descent algorithm: 
+
+\[
+\Theta_{\mu}^{ \  \  \nu} \equiv \Theta_{\mu}^{ \  \  \nu}(t+1) := \Theta_{\mu}^{ \  \  \nu} - \alpha \frac{\partial }{ \partial \Theta_{\mu}^{ \  \  \nu} } J(\Theta,b)
+\]
+with $\alpha \equiv $ learning rate.  
+
+And so given, with regularization term for full generality, $J(\Theta,b)$ of the form 
+\[
+\begin{aligned}
+J(\Theta,b) & = \frac{1}{m} \sum_{i=1}^m J(\Theta,b; X_{(i)}, y_{(i)}) + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2 = \\ 
+& =  \frac{ 1}{m} \sum_{i=1}^m \frac{1}{2} ( h_{(\Theta,b)}(X_{(i)}) - y_{(i)})^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2
+\end{aligned}
+\]
+with $h_{(\Theta,b)}(X_{(i)}) = x_{(i)}^{\mu} \Theta_{\mu}^{ \  \  \nu} + b^{\nu}$.  
+
+
+
+As a programming note, anticipating that we have to do $\sum_{i=1}^m$ summation, employ a \emph{struct of arrays (SOA)}.  
+
+\begin{equation}
+\frac{\partial J(\Theta,b)}{ \partial \Theta_{\mu}^{ \  \  \nu} } = \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)} )^{\nu} (X_{(i)})^{\mu} + \lambda \Theta_{\mu}^{ \  \  \nu} = \frac{1}{m} X(\widehat{y}(X) - y)^T + \lambda \Theta
+\end{equation}
+Notice how the matrix form $X(\widehat{y}(X) -y)^T$ works precisely because of the right-multiplication (order).  
+
+The update is as follows, in component and matrix form:
+\begin{equation}
+\begin{gathered}
+\Theta_{\mu}^{\  \  \nu}(t+1) := \Theta_{\mu}^{\  \  \nu}(t) - \alpha \frac{ \partial J( \Theta,b) }{ \partial \Theta_{\mu}^{\  \  \nu}}  = \Theta_{\mu}^{\  \  \nu}(t) - \alpha \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)})^{\nu} (X_{(i)})^{\mu} + \lambda \Theta_{\mu}^{\  \  \nu} \\
+\Theta(t+1) := \Theta(t) -\alpha \text{grad}_{\Theta}J = \Theta - \alpha \left( \frac{1}{m} X(\widehat{y}(X)-y)^T + \lambda \Theta \right) \\
+b^{\nu}(t+1) := b^{\nu}(t) - \alpha \frac{ \partial J }{ \partial b^{\nu}} = b^{\nu}(t) - \alpha \frac{1}{m} \sum_{i=1}^m (\widehat{y}(X_{(i)}) - y_{(i)})^{\nu} 
+\end{gathered}
+\end{equation}
+
+\subsection{Backpropagation, gradient descent, for artificial Neural Networks (NN)}
+Recall the feedforward (i.e. composition of R-modules and Hadamard functions), and the resulting parameters (for the model).  These parameters belong to a space of parameters which in in itself is a differentiable manifold (so-called matrix manifold):  
+\begin{equation}
+\begin{gathered}
+(\Theta,b) \in (\mathbf{\Theta},\mathbf{b}) \equiv \text{Mat}_{\mathbb{R}}(s_0,s_1) \times \mathbb{R}^{s_1} \times \text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2} \times \dots \times \text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} = \prod_{l=1}^L \text{Mat}(s_{l-1},s_l)\times \mathbb{R}^{s_l}  
+\end{gathered}
+\end{equation}
+ 
+Also, recall what the cost functional does: 
+\begin{equation}
+\begin{aligned} 
+& J:(\mathbf{\Theta}, \mathbf{b}) \to L((\mathbb{K}^d)^m,(\mathbb{K}^K)^m)   \\
+& J:(\Theta,b) \mapsto J(\Theta,b) \equiv J_{(\Theta,b)} \equiv J_{\Theta}
+\end{aligned}
+\end{equation}
+where \\
+$d = $ number of features \\
+$K=$ dim. of output \\
+$m=$ number of training examples \\
+$\mathbb{K} =$ field or set.  
+
+
+
 First, do feedforward on \emph{each} training example $t$, i.e.
 \begin{equation}
 \begin{gathered}
@@ -1595,8 +1783,68 @@ In fact, we obtain an ordered sequence of ``activation'' vectors:
   \end{gathered}
   \end{equation}
 
+cf. \href{https://web.stanford.edu/class/cs294a/sparseAutoencoder_2011new.pdf}{CS294A Lecture notes, Andrew Ng, "Sparse autoencoder"}
 
-From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagatio<n algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
+Cleaning up the notation abit, and having the retrospective (wiser, more general) view, the setup is this:  
+
+Given data to train on $(X,y) \in (\mathbb{K}^d \times \mathbb{K}^K)^m$, 
+\begin{equation}
+(X,y) \in (\mathbb{K}^d \times \mathbb{K}^K)^m \text{ where } \begin{aligned} & d = \text{ number of features } \\ 
+	& K = \text{ dim. of output } \\
+& m = \text{ number of training examples } \\ 
+& \mathbb{K} = \text{ field or set }
+\end{aligned}
+\end{equation}
+
+Consider weights and bias $(\Theta, b)$: 
+\begin{equation}
+	(\Theta, b) \in (\mathbf{\Theta}, \mathbf{b}) \equiv (\text{Mat}_{\mathbb{K}}(s_0,s_1) \times \mathbb{K}^{s_1} ) \times  (\text{Mat}_{\mathbb{K}}(s_1,s_2) \times \mathbb{K}^{s_2} ) \times \dots \times (\text{Mat}_{\mathbb{K}}(s_{L-1},s_L) \times \mathbb{K}^{s_L} )
+\end{equation}
+Consider the cost functional $\mathcal{J} := \mathcal{J}(\Theta,b)$ with the $L^1$ norm: 
+
+\begin{equation}
+\begin{aligned}
+\mathcal{J}(\Theta,b) & = \left[ \frac{1}{m} \sum_{i=1}^m \mathcal{J}(\Theta,b; X_{(i)}, y_{(i)} ) \right] + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1} -1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)} )^i_{ \  \  j} )^2  \\
+ &= \frac{1}{m} \sum_{i=1}^m \frac{1}{2} ( h_{(\Theta,b)}(X_{(i)} ) - y_{(i)} )^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1}  ((\Theta^{(l)})^i_{ \  \  j} )^2 
+\end{aligned}
+\end{equation}
+
+
+
+1 iteration of gradient descent, $t=0,1,\dots $  
+
+\begin{equation}
+\begin{aligned}
+&	(\Theta^{(l)})^i_{ \  \  j }(t+1)  = (\Theta^{(l)})^i_{ \  \  j}(t) - \alpha \frac{ \partial }{ \partial (\Theta^{(l)})^i_{ \  \  j} (t) } \mathcal{J}(\Theta,b) \qquad \, \begin{aligned}
+	& \forall \, l =1,2,\dots L \\ 
+	& \forall \, i = 0,1,\dots s_{l-1}- 1 \\ 
+	&  \forall \, j = 0,1,\dots s_l - 1 
+\end{aligned}
+	& (b^{(l)})_j(t+1) = (b^{(l)})_j(t) - \alpha \frac{ \partial }{ \partial (b^{(l)} )_j (t) } J(\Theta,b)
+\end{aligned}
+\end{equation}
+
+Consider the space of parameters $(\Theta,b) \in (\mathbf{\Theta}, \mathbf{b})$, 
+\begin{equation}
+(\Theta,b) \in (\mathbf{\Theta}, \mathbf{b}) \simeq \mathbb{R}^{ (s_0 + 1)s_1 + (s_1 +1)s_2 + \dots + (s_{L-1} + 1)s_L } \equiv \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }
+\end{equation}
+Treat $(\mathbf{\Theta}, \mathbf{b})$ as a \emph{differentiable manifold}, as it is isomorphic to $\mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }$.  Note that while the data isn't necessarily in the format of a field, nor $\mathbb{R}$ for that matter, surely the parameter space $(\mathbf{\Theta},\mathbf{b})$ is.  
+
+Assume that the cost functional is at least $C^1( (\mathbf{\Theta},\mathbf{b}) )$.  So 
+\[
+\begin{aligned}
+&	\mathcal{J} : (\mathbf{\Theta},\mathbf{b}) \simeq \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l  } \to \mathbb{R}^1 \\ 
+& 	\mathcal{J} : (\Theta,b) \mapsto \mathcal{J}( \Theta,b)
+\end{aligned}
+\]
+Consider 1-jets of $\mathcal{J} : (\mathbf{\Theta},\mathbf{b}) \simeq \mathbb{R}^{ \sum_{l=1}^L  (s_{l-1} + 1)s_l } \to \mathbb{R}^1 \equiv J^1( (\mathbf{\Theta},\mathbf{b}) , \mathbb{R}) = (\mathbf{\Theta},\mathbf{b}) \times \mathbb{R}^1 \times \mathbb{R}^{ \sum_{l=1}^L (s_{l-1} + 1) s_l }$, i.e. treat $\mathcal{J}$ as section (or field)  $\mathcal{J} :  (\mathbf{\Theta},\mathbf{b}) \to (\mathbf{\Theta},\mathbf{b}) \times \mathbb{R}^1$.  
+
+Then, we must compute $J^1_{\mathcal{J}}( (\Theta,b))$, the 1-jet, for some $(\Theta,b)$ (that is given in the beginning of the current iteration), the 1-jet of cost functional $\mathcal{J}$ at $(\Theta,b)$; it consists of $\sum_{l=1}^L (s_{l-1} + 1)s_l$ partial derivatives.  
+
+
+
+
+From \href{https://www.coursera.org/learn/machine-learning/lecture/1z9WW/backpropagation-algorithm}{Backpropagation algorithm, Cost Function and Backpropagation, Week 5 of Coursera's Machine Learning Introduction by Ng}, \href{https://www.coursera.org/learn/machine-learning/supplement/pjdBA/backpropagation-algorithm}{Backpropagation algorithm} notes, and \verb|ex4.pdf|
 
 Calculate
 \begin{equation}
@@ -1794,7 +2042,415 @@ a^{(l)} &   z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
 \end{tikzpicture}
   \end{equation}
 
-\subsection{Cost functional}
+See also \href{https://web.stanford.edu/class/cs294a/}{CS294A/CS294W Deep Learning and Unsupervised Feature Learning Winter 2011}
+
+\subsection{Backpropagation, gradient of the $L^2$ cost functional (linear regression)for gradient descent, for a DNN, in detail (chain rule on compositions)}
+
+Given dataset $X,y$:
+\[
+\begin{aligned}
+& X = X_i^{\  \  \mu} \in \text{Mat}_{\mathbb{R}}(m,d) \quad & i = 0,1, \dots m-1, \, \mu = 0,1,\dots d-1 \\ 
+& y = y_i^{\  \  k} \in \text{Mat}_{\mathbb{R}}(m,K) \quad & i=0,1,\dots m-1, \, k=0,1,\dots K-1
+\end{aligned}
+\]
+
+Start with 2 Axons (i.e. 1 "hidden" layer), $L=2$. Then $l=1,2$ (in general, $l=1,2,\dots L$).  
+
+For $l=1$, 
+\[
+\begin{aligned}
+& (z^{(1)})_i^{\  \  j_1} := X_i^{\  \  \mu} (\Theta^{(1)})_{\mu}^{\  \  j_1} + (b^{(1)})^{j_1}  & \in \text{Mat}_{\mathbb{R}}(m,s_1) \\
+& (a^{(1)})_i^{\  \  j_1} := \psi^{(1)}( X_i^{\  \  \mu} (\Theta^{(1)})_{\mu}^{\  \  j_1} + (b^{(1)})^{j_1} ) & \in \text{Mat}_{\mathbb{R}}(m,s_1)
+\end{aligned}
+\]  
+Likewise, for $l=2$, 
+\[
+\begin{aligned}
+& (z^{(2)})_i^{\  \  j_2} := (a^{(1)})_i^{\  \  j_1} (\Theta^{(2)})_{j_1}^{\  \  j_2} + (b^{(2)})^{j_2}  & \in \text{Mat}_{\mathbb{R}}(m,s_2) \\
+& (a^{(2)})_i^{\  \  j_2} := \psi^{(2)}( (a^{(1)})_i^{\  \  j_1} (\Theta^{(2)})_{j_1}^{\  \  j_2} + (b^{(2)})^{j_2} ) & \in \text{Mat}_{\mathbb{R}}(m,s_2)
+\end{aligned}
+\]  
+
+Immediately, we can generalize:
+\begin{equation}
+\begin{aligned}
+& (z^{(l)})_i^{\  \  j_l} := (a^{(l-1)})_i^{\  \  j_{l-1}} (\Theta^{(l)})_{j_{l-1}}^{\  \  j_l} + (b^{(l)})^{j_l}  & \in \text{Mat}_{\mathbb{R}}(m,s_l) \\
+& (a^{(l)})_i^{\  \  j_l} := \psi^{(l)}( (a^{(l-1)})_i^{\  \  j_{l-1}} (\Theta^{(l)})_{j_{l-1}}^{\  \  j_l} + (b^{(l)})^{j_l} ) & \in \text{Mat}_{\mathbb{R}}(m,s_l)
+\end{aligned}
+\end{equation}
+
+In general, for the $L^2$-norm cost functional $J$, the form is the following: 
+\begin{equation}
+\begin{aligned}
+J(\Theta,b)  =  \frac{ 1}{m} \sum_{i=1}^m \frac{1}{2} ( a^{(L)}_i - y_{(i)})^2 + \frac{\lambda}{2} \sum_{l=1}^L \sum_{i=0}^{s_{l-1}-1} \sum_{j=0}^{ s_l-1} ((\Theta^{(l)})^i_{\  \  j})^2
+\end{aligned}
+\end{equation}
+and this is also true:
+\begin{equation}
+\frac{ \partial }{ \partial (\Theta^{(l)})_j^{\  \  k} } \frac{1}{2} (a_i^{(L)} - y_{(i)})^2 = (a_i^{(L)} - y_{(i)}) \frac{\partial a_i^{(L)} }{ \partial (\Theta^{(l)})_j^{\  \  k} }
+\end{equation}
+
+For the sake of implementation, write out the $L^2$-norm cost functional $J$ explicitly:  
+\[
+\begin{gathered}
+	\Delta \equiv \Delta_i^{\  \  k} \equiv (a_i^{(L)} - y_{(i)}) \equiv (a_i^{(L)} - y_{(i)})^k \in \text{Mat}_{\mathbb{R}}(m,K) \\ 
+	 (a_i^{(L)} - y_{(i)})^2 \equiv (\Delta_i)^2 = \sum_{k=0}^{K-1}( \Delta_i^{\  \  k})^2 = \sum_{k=0}^{K-1} ((a_i^{(L)} - y_{(i)})^k)^2   \\
+\sum_{i=1}^m (\Delta_i)^2 = \sum_{i=1}^m \sum_{k=0}^{K-1} (\Delta_i^{\  \  k})^2 = \sum_{i=1}^m \sum_{k=0}^{K-1} ((a_i^{(L)} - y_{(i)})^k)^2
+\end{gathered}
+\]
+
+To get some intuition, let's do some simple examples.  Let $l=L$ and $L=2$:
+\[
+\frac{\partial a_i^{(L)} }{ \partial (\Theta^{(L)})_j^{\  \  k} } = \frac{ \partial \psi^{(L)} }{ \partial z^{(L)} }(z^{(L)} )  \frac{ \partial z^{(L)} }{ \partial (\Theta^{(L)})_j^{\  \  k} }= \frac{ \partial \psi^{(L)} }{ \partial ( z^{(L)})^k } (z^{(L)}  ) (a^{(L-1)})_i^{\  \  j} 
+\]
+
+Since $\psi^{(l)} \cdot$ is an element-wise Hadamard operation, its dependence is only upon 1 element and we should exploit this fact.  
+
+\[
+\begin{gathered}
+(z_i^{(l)})^{j_l} := (a_i^{(l-1)})^{j_{l-1}} (\Theta^{(l)})_{j_{l-1}}^{\  \  j_l} + (b^{(l)})^{j_l} \\ 
+(a_i^{(l)})^{j_l} := \psi^{(l)}( (z_i^{(l)} )^{j_l} )  \\
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  m} } = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial (\Theta^{(L)})_j^{\  \  m} }  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }(z^{(L)} )   = (a^{(L-1)})_i^{\  \  j} \delta^{mk}  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered}
+\]
+or 
+\[
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  k} } =  (a^{(L-1)})_i^{\  \  j}   \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\]
+For $l=L-1$, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-1)})_j^{\  \  m} } = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial (\Theta^{(L-1)})_j^{\  \  m} }  \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }   =  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-1)})_j^{\  \  m} } \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( a_i^{(L-1)})^{    j_{L-1}} }     \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+= (a^{(L-2)})_i^{\  \  j} \delta^{m j_{L-1}}  \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}    \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\ 
+= (a^{(L-2)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  m } }{ \partial (z^{(L-1)})_i^{\  \   m } }  (\Theta^{(L)})_{ m }^{\  \  k}    \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered}
+\]
+
+Doing 1 more, for $l=L-2$, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-2)})_j^{\  \  m} } =  \left[  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-2)})_j^{\  \  m} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+= \left[ (a^{(L-3)})_i^{\  \  j} \delta^{m j_{L-2}}  \frac{ \partial (\psi^{(L-2)})_i^{\  \  j_{L-2} } }{ \partial (z^{(L-2)})_i^{\  \  j_{L-2}} }  (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+=  (a^{(L-3)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-2)})_i^{\  \  m } }{ \partial (z^{(L-2)})_i^{\  \   m } }  (\Theta^{(L-1)})_{ m }^{\  \  j_{L-1}}    \frac{ \partial (\psi^{(L-1)})_i^{\  \  j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }   (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered}
+\]
+
+And so in general, for $l=1,2,\dots L$, 
+\begin{equation}\label{Eq:DNNpartialaL_noKroneckerdelta}
+\boxed{ \begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  m} } =   (a^{(L-l)})_i^{\  \  j}    \frac{ \partial (\psi^{(L-(l-1))})_i^{\  \  m } }{ \partial (z^{(L-(l-1))})_i^{\  \   m } }  (\Theta^{(L-(l-2))})_m^{\  \  j_{(L-(l-2))}}      \frac{ \partial (\psi^{(L-(l-2))})_i^{\  \  j_{(L-(l-2))} } }{ \partial (z^{(L-(l-2))})_i^{\  \  j_{(L-(l-2))}} } \cdot \\
+\cdot \prod_{l' = l-3}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi^{(L-l')})_i^{\  \  j_{L-l'} } }{ \partial (z^{(L-l')})_i^{\  \  j_{L-l'}} } \cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)})_i^{\  \  k } }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{gathered} 
+}
+\end{equation}
+
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-l))})_j^{\  \  m} } =  \left[  \frac{\partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-l)})_j^{\  \  m} } \right]  (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } = \\
+= (a^{(L-1-l)}_i)^{\  \  j}    \frac{ \partial (\psi_i^{(L-1-(l-1))})^{\  \  m } }{ \partial (z_i^{(L-(l-1))})^{\  \   m } }  (\Theta^{(L-(l-1))})_m^{\  \  j_{(L-(l-1))}}      \frac{ \partial (\psi_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))} } }{ \partial (z_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))}} } \cdot \\
+\cdot \prod_{l' = l-3}^{l'=1} (\Theta^{(L-1-l')})_{ j_{L-1-(l'+1)}}^{\  \  j_{L-1-l'}}      \frac{ \partial (\psi^{(L-1-l')}_i)^{\  \  j_{L-1-l'} } }{ \partial (z^{(L-1-l')}_i)^{\  \  j_{L-1-l'}} } \cdot (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}      \frac{ \partial (\psi_i^{(L-1)})^{\  \  j_{L-1} } }{ \partial (z_i^{(L-1)})^{\  \  j_{L-1}} } \cdot \\ 
+\cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } = \\
+= (a^{(L-1-l)}_i)^{\  \  j}    \frac{ \partial (\psi_i^{(L-1-(l-1))})^{\  \  m } }{ \partial (z_i^{(L-(l-1))})^{\  \   m } }  (\Theta^{(L-(l-1))})_m^{\  \  j_{(L-(l-1))}}      \frac{ \partial (\psi_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))} } }{ \partial (z_i^{(L-(l-1))})^{\  \  j_{(L-(l-1))}} } \cdot \\
+\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi^{(L-l')}_i)^{\  \  j_{L-l'} } }{ \partial (z^{(L-l')}_i)^{\  \  j_{L-l'}} } \cdot (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi^{(L)}_i)^{\  \  k } }{ \partial (z^{(L)}_i)^{\  \  k} } 
+\end{gathered}
+\]
+
+
+As a check, consider the $L=1$ case with no activation function, \emph{linear regression}, 
+\[
+\frac{ \partial (a_i^{(1)})^k }{ \partial \Theta_j^{\  \  m}} = (a^{(0)}_i)^j \delta^{mk} 1
+\]
+And so,
+\[
+\begin{gathered}
+\frac{\partial J}{ \partial ( \Theta^{(l)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)} ) \frac{\partial a_i^{(L)} }{ \partial ( \Theta^{(l)})_j^{\  \  p} } + \lambda ( \Theta^{(l)})_j^{\  \  p} \equiv \frac{1}{m} \sum_{i=1}^m \Delta _i \frac{\partial a_i^{(L)} }{ \partial  ( \Theta^{(l)})_j^{\  \  p} } + \lambda ( \Theta^{(l)})_j^{\  \  p} =\\
+= \frac{1}{m} \sum_{i=1}^m \sum_{k=0}^{K-1} \Delta_i^{\  \  k} \frac{ \partial ( a_i^{(L)})^k }{ \partial ( \Theta^{(l)})_j^{\  \  p}} + \lambda ( \Theta^{(l)})_j^{\  \  p} 
+\end{gathered}
+\]
+
+For the linear regression case, we have
+\[
+\Delta_i^{\  \  k} (a_i^{(0)})^j \delta^{pk} = \Delta_i^{\  \  p} (a_i^{(0)})^j 
+\]
+or explicitly 
+\[
+\sum_{k=0}^{K-1} \Delta_i^{\  \  k} (a_i^{(0)})^j \delta^{pk} = \Delta_i^{\  \  p} (a_i^{(0)})^j
+\]
+and so, for this linear regression case,  
+\begin{equation}
+\frac{ \partial J}{ \partial ( \Theta)_j^{\  \  p}} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  p} (a_i^{(0)})^j + \lambda \Theta_j^{\  \  p}
+\end{equation}
+
+\subsubsection{Gradient (Jacobian) of outer layer, with respect to bias $b$, for $L^2$ norm cost functional $J$}
+
+\[
+\begin{gathered}
+\begin{aligned}
+& \frac{ \partial }{ \partial (b^{(l)})^p} \frac{1}{2} (a_i^{(L)} - y_{(i)})^2 = (a_i^{(L)} - y_{(i)} ) \frac{ \partial a_i^{(L)} }{ \partial (b^{(l)})^p } \\
+& \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L)})^p}  = \delta_p^{\  \  k} \frac{ \partial ( \psi^{(L)})_i^{\  \  k} }{ \partial (z^{(L)})_i^{\  \  k} } = \frac{ \partial ( \psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p})}  \\
+ & \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-1)})^p} = \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( b^{(L-1)})^p} \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1}} }{ \partial (b^{(L-1)})^p }  \frac{ \partial (z^{(L)})_i^{\  \  k} }{ \partial ( a^{(L-1)})^{j_{L-1}}  }\frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }  =  \delta^{p j_{L-1}} \frac{ \partial ( \psi_i^{(L-1)})^{j_{L-1}} }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{j_{L-1}}^{\  \  k}   \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} } = \\
+ & = \frac{ \partial ( \psi_i^{(L-1)})^{ p } }{ \partial (z^{(L-1)})_i^{\  \  p } }  ( \Theta^{(L)})_{ p }^{\  \  k}   \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }   \\
+& \frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-2)})^p} = \frac{ \partial (a_i^{(L-1)})^{j_{L-1}} }{ \partial (b^{(L-2)})^p }  (\Theta^{(L)})_{j_{L-1}}^{\  \  k}  \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }  = \\
+& = \delta^{p j_{L-2}} \frac{ \partial ( \psi_i^{(L-2)})^{j_{L-2}} }{ \partial (z^{(L-2)})_i^{\  \  j_{L-2} } }  ( \Theta^{(L-1)})_{j_{L-2}}^{\  \  j_{L-1}}   \frac{\partial (\psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{\  \  j_{L-1}} }   (\Theta^{(L)})_{j_{L-1}}^{\  \  k}  \frac{\partial (\psi^{(L)}) }{ \partial (z_i^{(L)})^{k} } \\
+& = \frac{ \partial ( \psi_i^{(L-2)})^{ p } }{ \partial (z^{(L-2)})_i^{\  \  p } }  ( \Theta^{(L-1)})_{ p }^{\  \  j_{L-1}}    \frac{\partial (\psi^{(L-1)}_i)^{j_{L-1}} }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1}} }   (\Theta^{(L)})_{j_{L-1}}^{\  \  k}  \frac{\partial (\psi^{(L)}_i)^k }{ \partial (z^{(L)})_i^{\  \  k} }
+\end{aligned}
+\end{gathered}
+\]
+Suppose 
+\begin{equation}
+\boxed{ \begin{gathered}
+\frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-(l-1))})^p} = \frac{ \partial ( \psi_i^{(L-(l-1))})^{ p } }{ \partial (z^{(L-(l-1))})_i^{\  \  p } }  ( \Theta^{(L-(l-2))})_{ p }^{\  \  j_{L- (l-2)  }} \prod_{l'=l-2}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l'+1)})^{ j_{L-l'} } }{ \partial (z^{(L-l'+1)})_i^{\  \  j_{L-l'} } }  ( \Theta^{(L-l'+1)})_{ j_{L-l'} }^{\  \  j_{L-l'+1}} \cdot \\
+\cdot \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       
+\end{gathered} }
+\end{equation}
+
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{ \partial ( a_i^{(L)})^k }{ \partial (b^{(L-l)})^p} = \frac{ \partial ( a_i^{(L-1)})^{ j_{L-1} } }{ \partial (b^{(L-l)})^{    p } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }   = \\
+=  \frac{ \partial ( \psi_i^{(L-l))})^{ p } }{ \partial (z^{(L-l))})_i^{\  \  p } }  ( \Theta^{(L-(l-1))})_{ p }^{\  \  j_{L- (l-1)  }} \prod_{l'=l-2}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l')})^{ j_{L-1-l'} } }{ \partial (z^{(L-l')})_i^{\  \  j_{L-1-l'} } }  ( \Theta^{(L-l')})_{ j_{L-1-l'} }^{\  \  j_{L-l'}} \cdot \\
+\cdot \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-2} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-2} } }  ( \Theta^{(L-1)})_{ j_{L-2} }^{\  \  L-1} \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } } ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       = \\
+= \frac{ \partial ( \psi_i^{(L-l))})^{ p } }{ \partial (z^{(L-l))})_i^{\  \  p } }  ( \Theta^{(L-(l-1))})_{ p }^{\  \  j_{L- (l-1)  }} \prod_{l'=l-1}^{l'=2 }  \frac{ \partial ( \psi_i^{(L-l'+1)})^{ j_{L-l'} } }{ \partial (z^{(L-l'+1)})_i^{\  \  j_{L-l'} } }  ( \Theta^{(L-l'+1)})_{ j_{L-l'} }^{\  \  j_{L-l'+1}} \cdot  \frac{ \partial ( \psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z^{(L-1)})_i^{\  \  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }       
+\end{gathered}
+\]
+
+Also, for the form that includes the Kronecker delta, 
+\begin{equation}
+\begin{gathered}
+\boxed{ \frac{ \partial (a_i^{(L)})^k }{ \partial (b^{(L-(l-1))})^p} = \delta^{pj_{L-(l-1)}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{L-l'})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}}  \frac{ d ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi^{(L)}) }{ \partial (z_i^{(L)})^{\  \  k } }     }
+\end{gathered}
+\end{equation}
+Indeed, by induction, 
+\[
+\begin{gathered}
+\frac{ \partial (a_i^{(L)})^k }{ \partial (b^{(L-l)})^p } = \frac{ \partial ( a_i^{(L-1)})^{ j_{L-1} } }{ \partial (b^{(L-l)})^{    p } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }   = \\ 
+= \delta^{pj_{L-l}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-1-l')}}{ d(z_i^{L-1-l'})^{j_{L-1-l'}} } (\Theta^{(L-l')})_{j_{L-1-l'}}^{\  \  j_{L-l'}}  \frac{ d ( \psi^{(L-2)}) }{ \partial (z_i^{(L-2)})^{  j_{L-2} } }  ( \Theta^{(L-1)})_{ j_{L-2} }^{\  \  j_{L-1}} \frac{ \partial ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{\  \  j_{L-1} } } ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi_i^{(L)})^{ k } }{ \partial (z^{(L)})_i^{\  \  k } }  = \\
+= \delta^{pj_{L-l}} \prod_{l'=l}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{L-l'})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}}  \frac{ d ( \psi^{(L-1)}) }{ \partial (z_i^{(L-1)})^{  j_{L-1} } }  ( \Theta^{(L)})_{ j_{L-1} }^{\  \  k} \frac{ \partial ( \psi^{(L)}) }{ \partial (z_i^{(L)})^{\  \  k } } 
+\end{gathered} \]
+
+
+For the linear regression case, 
+\[
+\frac{ \partial J}{ \partial b^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k } \delta_{pk} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  p}
+\]
+
+
+
+
+
+
+%% EY : 20171024 
+
+Gathering all that we've learned so far, let's write out the full expression for the partial derivatives we desire for gradient descent:  
+
+\begin{equation}
+\boxed{ 
+\begin{gathered}
+\frac{ \partial J }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)})^k \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } + \lambda  \Theta^{(L-(l-1))})_j^{\  \  p} \text{ with } \begin{aligned} & j = 0,1\dots s_{(L-(l-1)-1)}-1 \\ & p = 0,1,\dots s_{(L-(l-1))} -1 \end{aligned}
+\end{gathered}	
+}
+\end{equation}
+
+\subsubsection{(Numerical) Implementation of Backpropagation for a DNN with $L^2$ norm cost functional $J$; using tensor contraction as Matrix multiplication}
+
+I was inspired by tensor contraction as Matrix multiplication from Bridgeman and Chubb (2016) \cite{BrCh2016}, pp. 6, 1.2.4 Grouping and splitting.  However, I will develop this idea from scratch here.  
+
+Consider the $L=1$ case.  Instead of the linear regression case, generalize to the application of an \emph{activation} function that acts element-wise (it's a Hadamard operation), $\psi^{(L)}$.  Then
+\[
+\begin{gathered}
+\frac{ \partial J}{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m (a_i^{(L)} - y_{(i)})^k (a^{(L-1)})_i^{\  \  j} \delta^{pk} \frac{ \partial (\psi^{(L)})_i^{\  \  k} }{ \partial (z^{(L)})_i^{\  \  k} } + \lambda (\Theta^{(L)})_j^{\  \  p}  = \\
+\equiv \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \   p} (a^{(L-1)})_i^{\  \  j} \frac{ \partial ( \psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p} } + \lambda (\Theta^{(L)})_j^{\  \  p} = \frac{1}{m} (a^{(L-1)})^T \left( \Delta \odot \frac{ \partial (\psi^{(L)}) }{ \partial (z^{(L)})}  \right) + \lambda (\Theta^{(L)})_j^{\  \  p}
+\end{gathered}
+\]
+
+Ignoring the regularization term (i.e. term with $\lambda$), the very last equation is the "matrix form", with the contraction over $i=1, \dots m$ implied, ${\, }^T$ denoting the transpose, and $\odot$ denoting the Hadamard product (element-wise operations), which is what we must equip the $R$-module.  
+\[
+\begin{aligned}
+& \frac{\partial J}{ \partial (\Theta^{(L)})_j^{\  \  p}} \in \text{Mat}_{\mathbb{R} }(s_{L-1}, s_L) \\ 
+& (a^{(L-1)})_i^{\  \ j } \in \text{Mat}_{\mathbb{R}}(m,s_{L-1}) \\
+& \Delta_i^{\  \  p} \in \text{Mat}_{\mathbb{R}}(m,s_L) \\ 
+& \frac{ \partial (\psi^{(L)})_i^{\  \  p} }{ \partial (z^{(L)})_i^{\  \  p} } \in \text{Mat}_{\mathbb{R}}(m,s_L) 
+\end{aligned}
+\]
+
+And so to try to generalize this expression, looking at Eq. \ref{Eq:DNNpartialaL_noKroneckerdelta}, we actually want to save the Kronecker delta and do the summation later.  Trying first a few easy examples, 
+\begin{equation}
+\begin{aligned}
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L)})_j^{\  \  p} } = (a_i^{(L-1)})^j \delta_{pk} \frac{\partial (\psi_i^{(L)})}{\partial (z_i^{(L)})^k} \\ 
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-1)})_j^{\  \  p} } = (a^{(L-2)}_i)^j \delta^{pj_{L-1}} \frac{\partial (\psi_i^{(L-1)})^{j_{L-1}}}{\partial (z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } \\
+& \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-2)})_j^{\  \  p} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-2)})_j^{\  \  p} } \frac{ \partial (z^{(L)}_i)^k }{ \partial (a_i^{(L-1)})^{j_{L-1}} } \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+& = (a^{(L-3)}_i)^j \delta^{pj_{L-2}} \frac{\partial (\psi_i^{(L-2)})^{j_{L-2}}}{\partial (z_i^{(L-2)})^{j_{L-2}} } (\Theta^{(L-1)})_{j_{L-2}}^{\  \  j_{L-1}} \frac{ \partial (\psi_i^{(L-1)})^{j_{L-1} }}{ \partial (z_i^{(L-1)})^{j_{L-1} } } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k }
+\end{aligned}
+\end{equation}
+and so in general, for $l=1,2,\dots L$, 
+\begin{equation}\label{Eq:DNNpartialaL_noKroneckerdelta}
+\boxed{ \begin{gathered}
+	\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } =   (a_i^{(L-l)})^{\  \  j} \delta^{pj_{L-(l-1)} }   \frac{ \partial (\psi_i^{(L-(l-1))})^{j_{L-(l-1)} } }{ \partial (z_i^{(L-(l-1))})^{j_{L-(l-1)} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} }
+	\end{gathered} 
+}
+\end{equation}
+
+Indeed, with proof by induction, 
+\[
+\begin{gathered}
+\frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-l)})_j^{\  \  p} } = \frac{ \partial (a_i^{(L-1)})^{j_{L-1} }}{ \partial (\Theta^{(L-l)})_j^{\  \  p} }  (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+= (a_i^{(L-l-1)})^{\  \  j} \delta^{pj_{L-l} }   \frac{ \partial (\psi_i^{(L-l)})^{j_{L-l} } }{ \partial (z_i^{(L-l)})^{j_{L-l} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-1-l')})_{ j_{L-l'}}^{\  \  j_{L-(l'+1)}}      \frac{ \partial (\psi_i^{(L-1-l')})^{\  \  j_{L-1-l'} } }{ \partial (z_i^{(L-1-l')})^{ j_{L-1-l'}} } (\Theta^{(L-1)})_{ j_{L-2}}^{\  \  j_{L-1}}      \frac{ \partial (\psi_i^{(L-1)})^{ j_{L-1} } }{ \partial (z_i^{(L-1)})^{  j_{L-1}} }
+ (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+ =    (a_i^{(L-(l+1)})^{\  \  j} \delta^{pj_{L-l} }   \frac{ \partial (\psi_i^{(L-l)})^{j_{L-l} } }{ \partial (z_i^{(L-l)})^{j_{L-l} } } 	\cdot \prod_{l' = l-1}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} }
+\end{gathered}
+\]
+
+Armed with these expressions, let us continue with simple examples, base cases, for $L=2$.  In this case,  
+\[
+\begin{gathered}
+\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \   k} \frac{\partial (a_i^{(L)})^k}{\partial (\Theta^{(L-1)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} (a_i^{(L-2)})^j \delta^{pj_{L-1}} \frac{ d\psi^{ (L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{d\psi^{(L)} }{ d(z_i^{(L)})^k} = \\
+= \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K (\Delta \odot \frac{d\psi}{ d(z_i^{(L)})} )_i^{\  \  k} ((\Theta^{(L)})^T)_i^{\  \  j_{L-1}} (a_i^{(L-2)})^j \delta^{pj_{L-1}} \frac{d\psi^{(L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } = \\
+= \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi}{ d(z^{(L)})} (\Theta^{(L)})^T )_i^{\  \  j_{L-1}} \frac{d\psi^{(L-1)}}{ d(z_i^{(L-1)})^{j_{L-1}} } (a_i^{(L-2)})^j \delta^{pj_{L-1}} = \frac{1}{m} \sum_{i=1}^m ( (\Delta \odot \frac{d\psi}{ d(z^{(L)})} (\Theta^{(L)})^T ) \odot \frac{d\psi^{(L-1)} }{ d(z^{(L-1)}) } )_i^{\  \  j_{L-1}} \delta^{pj_{L-1}} (a_i^{(L-2)})^j = \\
+=\frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi}{d (z_k^{(L)})} (\Theta^{(L)}) \odot \frac{d\psi^{(L-1)}}{ d(z^{(L-1)})} )_i^{\  \  p} (a_i^{(L-2)})^j = \\
+= \frac{1}{m} (a^{(L-2)})^T \left( \left( \Delta \odot \frac{d\psi^{(L)} }{ d(z_i^{(L)})} (\Theta^{(L)})^T \right) \odot \frac{d\psi^{(L-1)}}{dz^{(L-1)}} \right)
+\end{gathered}
+\]
+
+Doing 1 more case, $L=3$, 
+\[
+\begin{gathered}
+\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} \frac{ \partial (a_i^{(L)})^k }{ \partial ( \Theta^{(L-2)})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k}   (a^{(L-3)}_i)^j \delta^{pj_{L-2}} \frac{\partial (\psi_i^{(L-2)})^{j_{L-2}}}{\partial (z_i^{(L-2)})^{j_{L-2}} } (\Theta^{(L-1)})_{j_{L-2}}^{\  \  j_{L-1}} \frac{ \partial (\psi_i^{(L-1)})^{j_{L-1} }}{ \partial (z_i^{(L-1)})^{j_{L-1} } } (\Theta^{(L)})_{j_{L-1}}^{\  \  k} \frac{ \partial (\psi_i^{(L)})^k }{ \partial (z_i^{(L)})^k } = \\
+= \frac{1}{m} \sum_{i=1}^m \left( \Delta \odot \frac{d\psi}{dz^{(L)}} (\Theta^{(L)})^T \odot \frac{d\psi^{(L-1)} }{ dz^{(L-1)}} (\Theta^{(L-1)} )^T \odot \frac{d\psi^{(L-2)} }{ dz^{(L-2)}} \right)_i^{\  \  p} (a_i^{(L-3)} )^j = \\
+= \frac{1}{m} (a^{(L-3)})^T \Delta \odot \frac{d\psi }{dz^{(L)}} (\Theta^{(L)})^T \odot \frac{d\psi^{(L-1)} }{ dz^{(L-1)}} (\Theta^{(L-1)})^T \odot \frac{d\psi^{(L-2)} }{dz^{(L-2)}}
+\end{gathered}\]
+
+And so in general, 
+\begin{equation}
+\begin{gathered}
+	\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k} \frac{\partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } =  \\
+	= \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \Delta_i^{\  \  k}  (a_i^{(L-l)})^{\  \  j} \delta^{pj_{L-(l-1)} }   \frac{ \partial (\psi_i^{(L-(l-1))})^{j_{L-(l-1)} } }{ \partial (z_i^{(L-(l-1))})^{j_{L-(l-1)} } } 	\cdot \prod_{l' = l-2}^{l'=1} (\Theta^{(L-l')})_{ j_{L-(l'+1)}}^{\  \  j_{L-l'}}      \frac{ \partial (\psi_i^{(L-l')})^{\  \  j_{L-l'} } }{ \partial (z_i^{(L-l')})^{ j_{L-l'}} } (\Theta^{(L)})_{ j_{L-1}}^{\  \  k}      \frac{ \partial (\psi_i^{(L)})^{ k } }{ \partial (z_i^{(L)})^{  k} } = \\
+	= \frac{1}{m} \sum_{i=1}^m (a_i^{(L-l)})^j \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)}} (\Theta^{(L)})^T \left( \bigodot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right)_i^{\  \  p} = \\
+	=\boxed{ \frac{1}{m} (a^{(L-l)})^T  \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)}} (\Theta^{(L)})^T \left( \bigodot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right)  
+	}
+\end{gathered}
+\end{equation}
+
+Finally, we know how to take the gradient of $J$ of this particular form:  
+\begin{equation}\label{Eq:DNN_gradJ_L2norm_Thetas}
+\boxed{\begin{gathered}
+	\frac{ \partial J }{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} (a^{(L-1)})^T \left( \Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } \right) + \lambda \Theta^{(L)}	\\
+	\frac{ \partial J }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} (a^{(L-l)})^T \left( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)} } (\Theta^{(L)})^T \left( \odot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')}}{dz^{(L-l') } } (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{(L-(l-1)) } }{ dz^{(L-(l-1)) } } \right) + \lambda \Theta^{(L-(l-1)) } \\
+	\forall \, l = 2,\dots L 
+\end{gathered}}
+\end{equation}
+
+Similarly, for the bias $b$ term, starting from the first cases, 
+\[
+\begin{gathered}
+\frac{ \partial J }{ \partial (b^{(L)})^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k}  \frac{ \partial (a_i^{(i)})^k }{ \partial (b^{(L)})^p} = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta_p^{\  \  k} \frac{d \psi^{(L)} }{ d(z_i^{(L)})^k} = \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi^{(L)}}{ dz^{(L)}} )_i^{\  \  k} \delta_p^{\  \  k} = \frac{1}{m} \sum_{i=1}^m (\Delta \odot \frac{d\psi^{(L)}}{ dz^{(L)}})_i^{\  \  p} = \\
+= \frac{1}{m} \sum_{i=1}^m ((\Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T)^p_{\  \  i } \delta_{i1} = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}
+\end{gathered}
+\]
+Note the very last line, where we used a "trick" with the Kronecker delta, with just how the Kronecker delta is defined to behave, in order to insert the "column" vector of 1s.  And so 
+\begin{equation}
+\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}  
+\end{equation}
+
+Generalizing, 
+\[
+\begin{gathered}
+	\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } = \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta^{pj_{L-(l-1)}} \prod_{l'=l-1}^{l'=2} \frac{d\psi^{(L-l')}}{ d(z_i^{(L-l')})^{j_{L-l'}} } (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{\  \  j_{L-(l'-1)}} \frac{d \psi^{(L-1)} }{ d(z_i^{(L-1)})^{j_{L-1}} } (\Theta^{(L)})_{j_{L-1}}^{ \  \ k } \frac{d\psi^{(L)} }{ d(z_i^{(L)})^k }  = \\
+= \frac{1}{m} \sum_{i=1}^m \Delta_i^{\  \  k} \delta^{pj_{L-(l-1)}} \frac{d\psi^{(L-(l-1))} }{ d(z_i^{(L-(l-1))})^{j_{L-(l-1)}} }    \prod_{l'=l-1}^{l'=2} (\Theta^{(L-(l'-1))})_{j_{L-l'}}^{ \  \  j_{L-(l'-1)}} \frac{d \psi^{(L-(l'-1))} }{ d (z_i^{(L-(l'-1))})^{j_{L-(l'-1)}} } (\Theta^{(L)})_{j_{L-1}}^{\  \  k } \frac{d \psi^{(L)} }{ d(z_i^{(L)})^k}	= \\
+	= \frac{1}{m} \sum_{i=1}^m \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]_i^{\  \  j_{L-(l-1)}} \delta^{p j_{L-(l-1)}} = \\
+	= \frac{1}{m} \sum_{i=1}^m \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]_i^{\  \  p }  = \\
+	= \frac{1}{m}  1_{1\times m } \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } 
+\end{gathered}
+\]
+and so 
+\begin{equation}\label{Eq:DNN_gradJ_L2norm_bs}
+\boxed{ \begin{gathered}
+\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \Delta \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}   \\
+\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (\Delta \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
+\forall \, l = 2,3, \dots L
+\end{gathered} }
+\end{equation}
+
+
+\subsection{Gradients (Jacobian) for the Negative log likelihood function, for logistic regression}
+
+Recall the full expression for the cost functional of a deep neural network (DNN or ANN) using the negative log likelihood function (or so-called cross-entropy function):  
+
+\begin{equation}
+J(\Theta,b) = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K \left[ -y^k_{(i)} \log{ (h^k_{(\Theta,b)}(x_{(i)}) )} - (1-y^k_{(i)}) \log{ (1-h^k_{(\Theta,b)}(x_{(i)}) )}  \right] +  \frac{\lambda}{2m} \left[ \sum_{l=1}^L \sum_{j_{l-1} =0}^{ s_{l-1} -1} \sum_{j_l =0}^{s_l - 1} \left[ ( \Theta^{ (l)} )_{j_l}^{j_{l-1}} \right]^2 \right]
+\end{equation}
+
+Define the so-called cross-entropy function $s$:
+\[
+\begin{aligned}
+& s:[0,1]^2 \to \mathbb{R} \\ 
+& s\equiv s( y^k_{(i)}, \widehat{y}_{(i)}^k ) = -y^k_{(i)} \log{ (\widehat{y}^k_{(i)})} - (1-y^k_{(i)}) \log{ (1-\widehat{y}^k_{(i)})}  
+\end{aligned}
+\]
+$s$ notation was chosen to relate it, as it's formally equivalent, to entropy, whether the physical definition of entropy or Shannon entropy.  There ought to be a (succinct) mathematical discussion of how $s$ relates to Shannon entropy and to information theory.  Otherwise, from the physical point of view, the form of $s$ was chosen because of its mathematical properties ($s$ should be additive when we add 2 systems, $A$,$B$ together, etc.)
+
+Taking the partial derivative and keeping in mind that $\widehat{y}_{(i)}^k = \widehat{y}_{(i)}^k(\Theta,b)$, (i.e. only $\widehat{y}_{(i)}^k$ is dependent upon $(\Theta,b)\in (\mathbf{\Theta},\mathbf{b})$, and nothing else, not $y^k_{(i)}$, the given output data, 
+\[
+\begin{gathered}
+\frac{\partial s}{ \partial (\Theta^{ (L-(l-1))})_j^{\  \  p} } = -y^k_{(i)} \frac{1}{ \widehat{y}_{(i)}^k  } \frac{\partial \widehat{y}_{(i)}^k }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p } } +  \frac{ (1- y^k_{ (i)}) }{ 1- \widehat{y}_{(i)}^k } \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \\
+= \frac{ - y^k_{(i)} (1- \widehat{y}^k_{(i)}) + \widehat{y}^k_{(i)} (1-y^k_{(i)}) }{ \widehat{y}^k_{(i)} ( 1 - \widehat{y}^k_{(i)}) } \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} }
+\end{gathered}
+\] 
+In summary, 
+\begin{equation}
+\frac{\partial s}{ \partial (\Theta^{ (L-(l-1))})_j^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} }
+\end{equation}
+
+
+Clearly, 
+\begin{equation}
+\frac{\partial s}{ \partial (b^{ (L-(l-1))})^{\  \  p} } = \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \frac{\partial \widehat{y}_{(i)}^k }{ \partial ( b^{(L-(l-1))})^{ p} }
+\end{equation}
+
+
+
+
+%% EY : 20171024
+
+Gathering all that we've learned so far, let's write out the full expression for the partial derivatives we desire for gradient descent:  
+
+\begin{equation} %\label{Eq:}
+%\boxed{ 
+	\begin{gathered}
+	\frac{ \partial J }{ \partial ( \Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )}  \frac{ \partial (a_i^{(L)})^k }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } + \lambda  \Theta^{(L-(l-1))})_j^{\  \  p} \text{ with } \begin{aligned} & j = 0,1\dots s_{(L-(l-1)-1)}-1 \\ & p = 0,1,\dots s_{(L-(l-1))} -1 \end{aligned}
+	\end{gathered}	
+%}
+\end{equation}
+
+%% END of EY : 20171024
+
+If we treat this term as a matrix:
+\[
+ \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \in \text{Mat}_{\mathbb{R}}(m,K) 
+\]
+and since $\Delta_i^{\  \   k} := \widehat{y}_{(i)}^k - y_{(i)}^k \in \text{Mat}_{\mathbb{R}}(m,K)$, we can formally plug into Eqns. \ref{Eq:DNN_gradJ_L2norm_Thetas}, \ref{Eq:DNN_gradJ_L2norm_bs} to obtain 
+
+\[
+\begin{gathered}
+\frac{ \partial J }{ \partial (\Theta^{(L)})_j^{\  \  p} } = \frac{1}{m} (a^{(L-1)})^T \left(  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } \right) + \lambda \Theta^{(L)}	\\
+\frac{ \partial J }{ \partial (\Theta^{(L-(l-1))})_j^{\  \  p} } = \frac{1}{m} (a^{(L-l)})^T \left(  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)}}{dz^{(L)} } (\Theta^{(L)})^T \left( \odot_{l'=1}^{l'=l-2} \frac{d\psi^{(L-l')}}{dz^{(L-l') } } (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{(L-(l-1)) } }{ dz^{(L-(l-1)) } } \right) + \lambda \Theta^{(L-(l-1)) } \\
+\forall \, l = 2,\dots L 
+\end{gathered}
+\]
+and 
+\[
+\begin{gathered}
+\frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}   \\
+\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
+\forall \, l = 2,3, \dots L
+\end{gathered}\]
+
+Let us, only for notational convenience, when knowing that we are dealing with the case of logistic regression, using $s$, 
+\[
+ \Delta_i^{\  \  k } \equiv \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )}
+\]
+
+\section{Cost functional}
 
 The cost function $J$ is really a cost \emph{functional}, to first input in the output values $y$.  So
 \begin{equation}
@@ -1827,6 +2483,99 @@ For the above $\mathbf{ (\Theta,b)}$ was notation or shorthand as follows:
 \[
 \mathbf{ (\Theta,b ) } \equiv (\text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2}) \times (\text{Mat}_{\mathbb{R}}(s_2,s_3) \times \mathbb{R}^{s_3} ) \times \dots \times (\text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} )
 \]
+
+\section{Evaluating a Learning Algorithm, Model Selection, Cross-validation}  
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/OVM4M/deciding-what-to-try-next}{Deciding what to Try Next} for Week 6, Evaluating a Learning Algorithm.  
+
+Suppose we have a regularized linear regression model for supervised learning.  
+
+\begin{equation}
+	J(\Theta) = \frac{1}{2} \sum_{i=1}^m (h_{\Theta}(X_{(i)}) - y_{(i)} )^2 + \frac{\lambda}{2m} \sum_{j=1}^s \sum_{\mu=1}^d (\Theta_{\mu}^{\  \  \  j })^2 =  \frac{1}{2} \sum_{i=1}^m (h_{\Theta}(X_{(i)} ) - y_{(i)} )^2 + \frac{\lambda}{2m} \sum_{\mu =1}^d (\Theta_{\mu}^{ \  \  \  j })^2 
+\end{equation}
+
+For Model diagnosis, to answer questions of too great of error in $J$, \emph{do cross-validation}.  
+
+So, \\
+
+Do cross-validation.  For instance, given $X \in \mathbf{X} \in \text{Mod}_{R}$, $X_i^{ \  \  \mu } \in \mathbb{K}$, $\mathbf{X}_i \in \mathbb{K}^d$, \, $\forall \, i =1,2\dots m$, $\forall \, \mu =1\dots d$.  Do some random permutation on $(1,2,\dots m)$, and then split into training, validation, and test sets.  
+
+Suppose from $J(\Theta)(X_{\text{train}})$, obtain $\Theta$ s.t. $\min_{\Theta} J(\Theta)(X_{\text{train}})$.  
+
+Then $J_{\text{test}}(\Theta) = J(\Theta)(X_{\text{test}}) = \frac{1}{2} \sum_{i=1}^{m_{\text{test}}} (h_{\Theta}(X_i) - y_{(i)} )^2 + \frac{\lambda}{2m_{\text{test}}} \sum_{\mu=1}^d (\Theta_{\mu})^2 $.  
+
+For classification, classification error (aka 0/1 misclassification error), essentially taking a fraction, define
+\begin{equation}
+	\text{err}(h_{\Theta}(X_{(i)} ), y_{(i)} ) := \begin{cases} 1 & \text{ if } h_{\Theta}(X_{(i)} ) \geq 0.5 \text{ and } y=0 \text{ or } h_{\Theta}(X_{(i)}) < 0.5 \text{ and } y=1 \\ 
+0 & \text{ otherwise } \end{cases}
+\end{equation}
+
+\[
+J(\Theta)(X) = \frac{1}{m} \sum_{i=1}^m \text{err}(h_{\Theta}(X_{(i)}), y_{(i)} )
+\]
+
+
+cf. \href{https://www.coursera.org/learn/machine-learning/supplement/aFpD3/evaluating-a-hypothesis}{Evaluating a hypothesis}
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/QGKbr/model-selection-and-train-validation-test-sets}{Model Selection and Train/Validation/Test Sets}
+
+Given $J$, consider $J(X)(\Theta) = J_X(\Theta)$, when choosing between $\Theta$, vs. $\Theta'$, for $X=X_{\text{valid}}$.  $J_{X_{\text{valid}}}(\Theta)$ and vary $\Theta$, different choices or models of $\Theta$ (nonlinear, polynomial features, weighted by different $\Theta$, for example), while keeping $X_{\text{valid}}$ fixed, and observe changes in $J$.  
+
+e.g. for $L^2$ loss, 
+\[
+\begin{aligned}
+	& J_{\text{train}}(\Theta) \equiv  J(X_{\text{train}})(\Theta) = J_{X_{\text{train}}}(\Theta) = \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\ 
+	& J_{\text{valid}}(\Theta) \equiv  J(X_{\text{valid}})(\Theta) = J_{X_{\text{valid}}}(\Theta) = \frac{1}{2m_{\text{valid}}} \sum_{i=1}^{m_{\text{valid}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\
+	& J_{\text{test}}(\Theta) \equiv  J(\Theta)(X_{\text{test}}) = J_{\Theta}(X_{\text{test}}) = \frac{1}{2m_{\text{test}}} \sum_{i=1}^{m_{\text{test}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 
+\end{aligned}
+\]
+
+\subsection{Diagnosing bias vs. variance}
+
+cf \href{https://www.coursera.org/learn/machine-learning/lecture/yCAup/diagnosing-bias-vs-variance}{Diagnosing bias vs. variance}  If you're running a learning algorithm, and it doesn't do as well as expected, it's either, almost always,
+\begin{enumerate}
+\item bias - underfit
+\item high variance - overfit
+\end{enumerate}
+
+\subsubsection{Diagnosing bias vs. variance}
+
+Consider 
+\[
+\begin{aligned}
+	& J_{\text{train}}(\Theta) \equiv  J(X_{\text{train}})(\Theta) = J_{X_{\text{train}}}(\Theta) = \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 \\ 
+	& J_{\text{valid}}(\Theta) \equiv  J(X_{\text{valid}})(\Theta) = J_{X_{\text{valid}}}(\Theta) = \frac{1}{2m_{\text{valid}}} \sum_{i=1}^{m_{\text{valid}} } (h_{\Theta}(X_{(i)}) -y_{(i)} )^2 
+\end{aligned}
+\]
+If both $J_{X_{\text{train}}}$, $J_{X_{\text{valid}}}$ large, \textbf{bias} problem, $\Theta$ form is not complex enough.  \\
+If $J_{X_{\text{train}}}$ low, ($(h_{\Theta}(X_{\text{train}}) -y_{\text{train}})^2$ small), but $J_{X_{\text{valid}}}$ high, \textbf{high variance}, $\Theta$ too complex, overfits on $X_{\text{train}}$.  
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/4VDlf/regularization-and-bias-variance}{Regularization and Bias/Variance}  
+
+\subsubsection{e.g. Linear regression with regularization, and how $\lambda$ affects underfitting (high bias) or overfitting (high variance)}
+
+If $\lambda$ large, as $\min_{\Theta} J(\Theta)$, then $\Theta$ small, i.e. $\Theta \approx 0$, and so $h_{\Theta}(X_{(i)}) \approx 0$.  $J$ large.  \textbf{high bias (underfit)}.  \\
+If $\lambda$ small, \textbf{high variance, overfit}.  $J$ (deceptively) small.  
+
+\subsubsection{Choosing the regularization parameter $\lambda$; try an arbitrary range of values of $\lambda$, minimize $J$ with respect to $\lambda$}.  
+
+Consider
+\[
+J_{X_{\text{valid}}}(\Theta) \equiv J_{cv}(\Theta) = J(X_{\text{valid}})(\Theta) = J(X_{\text{valid}})(\Theta)(\lambda)
+\]
+Then 
+\[
+\min_{\lambda \in [0,10] }J_{X_{\text{valid}},\Theta}(\lambda)
+\]
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/Kont7/learning-curves}{Learning Curves}
+
+Consider $J=J(\Theta)(X) = J_{\Theta}(X)$ and consider $\lim_{m\to \infty} J_{\Theta}(X)$ with $X= X_i$, $\forall \, i =1,2,\dots m$.  
+
+Note that $\lim_{m_{\text{train}}\to \infty} J_{\Theta}(X_{\text{train}}) \to $ large, since $J_{\Theta}(X_{\text{train}}) \sim \frac{1}{2m_{\text{train}}} \sum_{i=1}^{m_{\text{train}}} (h_{\Theta}(X_{(i)}) -y_{(i)})^2$.  \\
+But $\lim_{m_{\text{valid}} \to \infty} J_{\Theta}(X_{\text{valid}}) \to 0$.  
+
+
 
 
 \section{Universal approximation theorem}
@@ -2005,7 +2754,602 @@ Look at the parameters:
   \end{equation}
 These parameters are what you put into, in the language of \verb|theano|, for the argument value of \verb|non_sequences| of \verb|theano.scan|.  
 
+\subsection{Representation of time-dependent input and target data, i.e. when $X$ and $y$ depend on time $t$; Sequential data}
+
+Consider this representation:  
+\begin{equation}
+\begin{tikzpicture}[framed]
+  \matrix (m) [matrix of math nodes, row sep=1.25em, column sep=3em, minimum width=1em]
+  {
+	X:\lbrace 0 1,\dots T-1 \rbrace & (\mathbb{K}^d)^m    & \text{Mat}_{\mathbb{K}}(m,d) \\
+	X:t & X(t) \in (\mathbb{K}^d)^m & X(t) \in \text{Mat}_{\mathbb{K}}(m,d)  \\
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+	(m-1-2) edge node [above] {$$} (m-1-3)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+(m-2-2) edge node [above] {$$} (m-2-3)
+  ;
+\end{tikzpicture}
+\end{equation}
+where $T,m,d\in\mathbb{Z}^+$.  
+
+For clarification, note that $\forall \, t\in \lbrace 0 ,1,\dots T-1\rbrace$, i.e. every (discrete) time $t$, we have $m$ samples to consider: 
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=0.85em, column sep=2em, minimum width=.6em]
+  {
+	X(t) : \lbrace 0,1,\dots m -1\rbrace  & \mathbb{K}^d \\ 
+	X(t): (i) & X(t)_{(i)} \in \mathbb{K}^d \\ 
+  };
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  ;
+\end{tikzpicture}
+\]
+\[
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes, row sep=0.85em, column sep=2em, minimum width=.6em]
+  {
+	X(t) : \lbrace 0,1,\dots m -1\rbrace \times \lbrace 0 ,1\dots d-1 \rbrace  & \mathbb{K}\\ 
+	X(t): (i), j & X(t)_{(i)}^j \in \mathbb{K}\\ 
+  }
+;
+  \path[->]
+  (m-1-1) edge node [above] {$$} (m-1-2)
+  ;
+  \path[|->]
+  (m-2-1) edge node [above] {$$} (m-2-2)
+  ;
+\end{tikzpicture}
+\]
+
+
+
+For Recurrent Neural Networks (RNN), RNNs have the problem of \emph{exploding gradients}: roughly speaking, 
+\[
+\text{grad}J \equiv \frac{ \partial J}{ \partial \Theta_I } \sim  ( \Theta_I)^t, \qquad \, t\in \lbrace 0 ,1,\dots T-1 \rbrace
+\]
+since for each time iteration, a factor of the weight $\Theta$ is multiplied.  
+
+So for the exploding gradient problem, if $\| \Theta_I \| >1$, after $t>1$, the gradient grows; if $\| \Theta_I \| <1$, after $t>1$, gradient goes to $0$, and so long term memories ($t \gg 1$), aren't included: LSTM gradient cannot go to $0$.  
+
+In presenting the definition of Long-Short Term Memory (LSTM), I will present various notation used as even Jozefowicz, Zaremba, and Sutskever \cite{JZS2015} even says different notation is used by practitioners.  They denoted the following:  
+\begin{equation}
+\begin{aligned}
+	& i_t = \tanh{(W_{xi} X_t + W_{hi} h_{t-1} + b_i )}  \\
+	& j_t = \text{sigm}{(W_{xj} X_t + W_{hj} h_{t-1} + b_j )}  \\
+	& f_t = \text{sigm}{(W_{xf} X_t + W_{hf} h_{t-1} + b_f )}  \\
+	& o_t = \tanh{(W_{xo} X_t + W_{ho} h_{t-1} + b_o )}  \\
+	& c_t =  c_{t-1}\otimes f_t + i_t \otimes j_t  \\
+	& h_t = \tanh{ (c_t)}\otimes o_t  
+\end{aligned}
+\end{equation}
+
+
+
+Jozefowicz, Zaremba, and Sutskever \cite{JZS2015}.  
+
+Bengio, et. al. \cite{GBC2016}
+
+
+
 \subsection{How to choose the number of hidden layers and nodes in a neural net}
+
+
+\part{Convolutional Neural Networks (CNN); CNN, higher-rank tensors}
+
+
+
+\subsection*{Convolution}
+define \textbf{convolution} of $f,g$ on $\mathbb{R}^n$
+\begin{definition}
+	\begin{equation}  f* g(x) = \int_{ \mathbb{R}^n } f(x-y)g(y)dy \end{equation}
+\end{definition}
+Note $f*g = g*f$ by change of variables.  
+Now
+\[
+\begin{gathered}
+y(t) = \int_{-\infty}^{\infty}x(\tau)h(t-\tau)d\tau = \int_{-\infty}^{\infty} d\tau \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) e^{i\omega \tau} d\omega h(t-\tau) e^{-i \omega t} e^{-\omega t} = \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) \widehat{h}(\omega) e^{i\omega t} d\omega \\ 
+\Longrightarrow \widehat{y}(\omega) = \widehat{x}(\omega) \widehat{h}(\omega)
+\end{gathered}
+\]
+Discrete case: if $f,g$ are \emph{discrete}, i.e. $\begin{aligned} & \quad \\
+& f = f(i) \\
+& g = g(j) \end{aligned}$, $i,j \in \mathbb{Z}$, then
+\[
+\int_{-\infty}^{\infty} dy f(x-y)g(y) = \sum_{k=-\infty}^{\infty} f(n-k) g(k) = (f*g)(n)
+\]
+\section{Images, and generalization of Images as multilinear mappings; Convolution by a filter (stencil $c$)}
+Given image of size $L_x \times L_y$, i.e. $(L_x,L_y)\in ( \mathbb{Z}^+)^2$.  An image really is a "designated" or "particular," "fixed" mapping $f$.  
+\[
+\begin{gathered}
+f: \lbrace 0 , \dots L_x- 1\rbrace \times \lbrace 0 \dots L_y-1 \rbrace \to \lbrace 0 \dots 255 \rbrace^4 \\ 
+f(x,y) = (f^{(r)}(x,y), f^{(b)}(x,y), f^{(g)}(x,y), f^{(\alpha)}(x,y))
+\end{gathered}
+\]
+Note that $f$ consists of the usual 4 "channels" for rgb color with $\alpha$ denoting "hue."  
+Generalize this to the following multilinear mapping:  
+with size dimensions $L_1 \times L_2 \times \dots \times L_d, (L_1, L_2 \dots L_d)\in (\mathbb{Z}^+)^d$, 
+\begin{equation}
+\begin{gathered}
+f: \lbrace 0 \dots L_1 - 1 \rbrace \times  \lbrace 0 \dots L_2 - 1 \rbrace \times \dots \times  \lbrace 0 \dots L_d - 1 \rbrace \to \mathbb{K}^C ; \qquad \, C\in \mathbb{Z}^+ , \, \mathbb{K} = \mathbb{R} \text{ or } \mathbb{Z} \\ 
+f(x_1,x_2 \dots x_d) = (f^{(1)}(x_1,x_2,\dots x_d), f^{(2)}(x_1,x_2,\dots x_d), \dots f^{(C)}(x_1,x_2,\dots x_d) )
+\end{gathered}
+\end{equation}
+\subsection{Filter (stencil) $c$ }
+For the filter (i.e. stencil) $c$, stipulate that $W$'s are odd, (the letter $W$ denote stencil width or filter width).  
+\[
+\begin{gathered}
+	(\nu_x,\nu_y) \in \lbrace 0 \dots W_x-1\rbrace \times \lbrace 0 \dots W_y-1 \rbrace \\
+	c : \lbrace 0 , \dots W_x -1\rbrace \times \lbrace 0, \dots W_y-1 \rbrace \to (\mathbb{K})^C  \\
+	c(\nu_x,\nu_y) \mapsto c(\nu_x,\nu_y)=(c^{(1)}(\nu_x,\nu_y),c^{(2)}(\nu_x,\nu_y), \dots c^{(C)}(\nu_x,\nu_y)) 
+\end{gathered}
+\]
+In general, 
+\begin{equation}
+\begin{gathered}
+	(\nu_1, \nu_2 \dots \nu_d) \in \lbrace 0 , \dots , W_1-1 \rbrace \times \lbrace 0 , \dots , W_2-1 \rbrace \times \dots \times \lbrace 0 , \dots , W_d-1 \rbrace   \\
+	c: \lbrace 0 , \dots W_1 - 1 \rbrace \times \dots \times \lbrace 0 , \dots W_d - 1 \rbrace \to (\mathbb{K})^C  \\
+	c(\nu_1 , \nu_2 \dots \nu_d) \mapsto (c^{(1)}(\nu_1 , \dots \nu_d) ,\dots c^{(C)}(\nu_1 \dots \nu_d) )
+\end{gathered}
+\end{equation}
+This filter (stencil) operation, $c\in L(\lbrace 0 \dots W_1 - 1\rbrace \times \dots \times \lbrace 0 ,\dots W_d - 1\rbrace , (\mathbb{K})^C)$, can be isomorphically mapped to a "matrix" or "tensor" of values (but we can only say that it gets mapped into elements in the space of the Cartesian product of vector spaces $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2} \times \dots \times (\mathbb{K}^C)^{W_d} \equiv (\mathbb{K}^C)^{W_1 W_2 \dots W_d}$.  We cannot say that it gets mapped to a tensor.  We need to require that this Cartesian product have an equivalence relation be "quotient"-ed out.  For example, if for $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2}$, the equivalence relation is of the form $(v_1 + v_2,w) - (v_1,w) - (v_2,w), (v,w_1+w_2)-(v,w_1)-(v,w_2), c(v,w)-(cv,w), c(v,w)-(v,cw)$, $\forall \, v_1,v_2,v \in (\mathbb{K}^C)^{W_1}$, $\forall \, w_1,w_2,w \in (\mathbb{K}^C)^{W_2}$, $c\in \mathbb{K}$.  We must take the quotient according to this equivalence relation.  Then we need to check if this produces the universality property of tensors in the view point of category theory).  
+For the sake of notation, since surely $W_i$ is an odd number, then $\forall \, i = 1\dots d$, $W_i = 2h_i + 1$, $h_i \in \mathbb{Z}^+$.  Division with integers yields the "floor."  Keep that mind in the notation of $W_i/2$.  
+Then consider the \emph{discrete convolution} $g=c*f$: 
+\begin{equation}\label{Eq:DiscreteConvolution}
+\begin{gathered}
+g^{(\alpha)}(i_1, i_2 \dots i_d) = \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
+\end{gathered}
+\end{equation}
+For the $d=2$ case, 
+\[
+\begin{gathered}
+g^{(\alpha)}(i,j) = \sum_{\nu_1=0}^{W_1-1}\sum_{\nu_2=0}^{W_2-1} c^{(\alpha)}(\nu_1, \nu_2)f^{(\alpha)}(i+\nu_1 - h_1, j +\nu_2 - h_2)
+\end{gathered}
+\]
+Unless there were specified boundary conditions, observe that for $g$, 
+\[
+\begin{gathered}
+h_1 \leq i_1 \leq L_1 - 1 - h_1 \\
+h_2 \leq i_2 \leq L_2 - 1 - h_2 \\
+\vdots \\ 
+h_d \leq i_d \leq L_d - 1 - h_d \\
+\end{gathered}
+\]
+and so observe that unless boundary conditions for $f$ is specified with additional assumptions, 
+\begin{equation}
+g:\lbrace 0 \dots L_1 -1 - 2h_1 \rbrace \times \lbrace 0 \dots L_2 -1 - 2h_2 \rbrace \times \dots \times \lbrace 0 \dots L_d -1 - 2h_d \rbrace  \to \mathbb{K}^C
+\end{equation}
+$g$ is "smaller" than $f$ by $\frac{W_1}{2} , \frac{W_2}{2} \dots \frac{W_d}{2}$ in each of dims. $f$ "shrank" to.  
+\section{Convolution Axon}
+Recall the $l$th axon of the deep neural network (DNN), which consists of the $l-1$th layer, $a^{(l-1)}$ which is the "input" of this axon and the $l$th layer, $a^{(l)}$ the "output" of this axon.  Others call this the "fully-connected layer."  
+\begin{equation}
+\begin{tikzpicture}[framed]
+\matrix (m) [matrix of math nodes, row sep=2.1em, column sep=4em, minimum width=1.5em]
+{
+	\text{\textbf{Mod}}_{R^{(l-1)}} & \text{\textbf{Mod}}_{R^{(l)}}  & \text{\textbf{Mod}}_{R^{(l)}} \\
+	(\mathbb{K}^{s_{l-1}})^m  & (\mathbb{K}^{s_l})^m & ( \mathbb{K}^{s_l})^m  \\ 
+	a^{(l-1)}  & z^{(l)} & a^{(l)} \\ 
+};
+\path[->]
+(m-1-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-1-2)
+(m-1-2) edge node [above] {$ \psi^{(l)} \odot $} (m-1-3)
+;
+\path[->]
+(m-2-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-2-2)
+(m-2-2) edge node [above] {$ \psi^{(l)} \odot $} (m-2-3)
+;
+\path[|->]
+(m-3-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-3-2)
+(m-3-2) edge node [above] {$ \psi^{(l)} \odot $} (m-3-3)
+;
+\end{tikzpicture} 
+\end{equation}
+with 
+\begin{equation}
+\begin{gathered}
+\begin{gathered}
+z^{(l)} := a^{(l-1)} \Theta^{(l)} + b^{(l)} \\
+(z^{(l)})_j = (a^{(l+1)})_{\mu} \Theta^{\mu}_{\ \  j}
+\end{gathered} \qquad \, \\ 
+\text{ e.g. } \Theta^{\mu}_{ \ \  j} \in ( \text{Mat}_{\mathbb{K}}(m,s_{l-1}) )^* \otimes \text{Mat}_{\mathbb{K}}(m,s_l) \cong \text{Mat}_{\mathbb{K}}(s_{l-1},s_l)\\
+a^l := \psi^{(l)}(z^{(l)})
+\end{gathered}
+\end{equation}
+Consider again a single "generalized image", as a given element in the space of linear mappings $L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right)$:  
+\begin{equation}
+\begin{gathered}
+L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right) \ni \\
+\ni (f^{(1)}(x_1,x_2 \dots x_d), f^{(2)}(x_1,x_2 \dots x_d) , \dots f^{(C)}(x_1,x_2 \dots x_d)) \equiv (f^{(1)}),f^{(2)}, \dots f^{(C)} )(x_1,x_2 \dots x_d)
+\end{gathered}
+\end{equation}
+For example, for the case of $d=2$, $C=1$, then we have a \emph{grayscale image} of size dimensions $L_1 \equiv H$, $L_2 \equiv W$ (with $H$, $W$ denoting height and width of an image, respectively).  Then 
+\[
+L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}) \ni f(x_1,x_2)
+\]
+e.g. $d=2,C=3$, rgb image (of 3 "channels"):
+\[
+\begin{gathered}
+L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}^3) \ni f(x_1,x_2) = \\
+(f^{(r)}(x_1,x_2),f^{(g)}(x_1,x_2),f^{(b)}(x_1,x_2)) = (f^{(r)}, f^{(g)},f^{(b)})(x_1,x_2)
+\end{gathered}
+\]
+Then, as a warm-up, consider the convolution of this single image with a filter (stencil) $c$, as given with Eq. \ref{Eq:DiscreteConvolution}:
+\[
+\begin{gathered}
+g^{(\alpha)}(i_1,i_2 \dots i_d) = \\
+= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
+\end{gathered}
+\]
+But we really want to consider $m$ total samples/examples, concurrently.  Let us, for notation, index these samples/examples by $i_m = 0,1,\dots m-1$.  
+Also, consider as a change of notation, where we index the components of $c$ and $f$ to be a subscript, as opposed to being a superscript, before:
+\begin{equation}
+\begin{gathered}
+L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C) \ni \\
+\ni (f_1,f_2 \dots f_C)(x_1,x_2 \dots x_d) = (f_1(x_1,x_2 \dots x_d), f_2(x_1\dots x_d), \dots f_C(x_1 \dots x_d))
+\end{gathered}
+\end{equation}
+Then consider the "convolution input layer" to be an element in $ (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m$: 
+\begin{equation}
+ (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m \cong \left( \otimes_{\alpha=1}^C (\otimes_{i=1}^d \mathbb{K}^{L_1}) \right)^m
+\end{equation}
+Recall again the filter (stencil) $c$, 
+\begin{equation}
+\begin{gathered}
+c: \otimes_{i=1}^d \lbrace 0 ,1,\dots W_i -1\rbrace \to (\mathbb{K})^C  \\
+c(\nu_1, \nu_2 ,\dots \nu_d) \mapsto (c_1,c_2, \dots c_C)(\nu_1\dots \nu_d) 
+\end{gathered}
+\end{equation}
+\begin{equation}
+\begin{gathered}
+f*c = (f*c)_{\alpha}^{(i_m)}(i_1,\dots i_d) = \\
+= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} f_{\alpha}^{(i_m)}(i_1 + \nu_1 - \frac{W_1}{2}, i_2 + \nu_2 - \frac{W_{\alpha}}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) c_{\alpha}(\nu_1 \dots \nu_d)
+\end{gathered}
+\end{equation}
+Consider a bias, $b$, as a $R$-module, 
+\[
+b \in \left( L (\otimes_{i=1}^d \lbrace 0 ,1, \dots L_i - 1 - 2h_i \rbrace , \mathbb{K}^C) \right)^m
+\]
+which is "broadcasted" or "copied" $m$ times.  
+We can also rewrite this as the following:
+\[
+\left( \otimes_{i=1}^d ( \mathbb{K}^C)^{L_i - 2h_i} \right)^m  
+\]
+The Convolution axon (or what others call convolution layer) is in a sense a higher-rank generalization of the DNN axon.  
+cf. \href{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}{David Stutz's Seminar Report "Understanding Convolutional Neural Networks (2014)}, \url{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}
+
+
+
+%Consider discrete convolution; $g=c*f$  
+
+%\begin{equation}
+%\begin{aligned}
+%	g^{(\alpha)}(i_1,i_2 \dots i_d) = \sum_{\nu_1=0}^{W_1-1}\sum_{\nu_2=0}^{W_2-1}  \dots \sum_{\nu_d=0}^{W_d-1}  c^{(\alpha)}(\nu_1 \dots \nu_d )f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2} , \dots i_d + \nu_d - \frac{W_d}{2} )   \\
+%\text{ e.g. } g^{(\alpha)}(i,j) = \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1}  c^{(\alpha)}( \nu_1 , \nu_2) f^{(\alpha)}(i+\nu_1- h_1 , j+%\nu_2 -h_2)  
+%\end{aligned}
+%\end{equation}
+
+%Unless there were specified boundary conditions, observe that for $g$, 
+%\begin{equation}
+%\begin{aligned}
+%	& h_1 \leq i_1 \leq L_1 - 1 -h_1 \\ 
+%	& h_2 \leq i_2 \leq L_2 - 1 -h_2 \\ 
+%	& \vdots 
+%	& h_d \leq i_d \leq L_d-1 -h_d 
+%\end{aligned}
+%\end{equation}
+%and so we observe that, unless boundary conditions for $f$ are specified, with additional assumptions, 
+%\[
+%g: \lbrace 0 \dots L_1 - 1 -2h_1 \rbrace \times \lbrace  0 \dots L_2 - 1 -2h_2 \rbrace \times \dots \times \lbrace 0 , \dots L_d-1 - 2h_d \rbrace \to \mathbb{K}^C
+%\]
+%$g$ is "smaller" than $f$ by $\frac{W_1}{2} , \frac{W_2}{2} \dots \frac{W_d}{2} $ in each of dims. $f$
+
+\begin{equation}
+\begin{gathered}
+a_l  = \psi_l \odot ( a_{l-1} * c + b_l ) \text{ with } 
+	a_{l-1} \in ( L \left( \bigotimes_{i=1}^d \lbrace 0\dots L_i -1 \rbrace, \mathbb{K}^{C_l-1}  \right) )^m \mapsto ( L \left( \bigotimes_{i=1}^d \lbrace 0\dots L_i -2h_i-1 \rbrace, \mathbb{K}^{C_l-1}  \right) )^m
+\end{gathered}
+\end{equation}
+
+\subsection{Max-pooling}  
+
+\begin{equation}
+\begin{gathered}
+	x \in L(\bigotimes_{i=1}^d \lbrace 0 \dots L_i - 1\rbrace ,\mathbb{K} ) \mapsto y \in L(\bigotimes_{i=1}^d \lbrace 0 \dots L_i /P_i - 1\rbrace ,\mathbb{K} )   \text{ where } \\
+y(i_1\dots i_d) = \max_{ \substack{ \nu_1 = 0 \dots P_1 - 1 \\ \vdots \\ \nu_d = 0 \dots P_d-1 } } x(i_1 - \nu_1 - \frac{P_1}{2} , \dots i_d - \nu_d - \frac{P_d}{2} )
+\end{gathered}
+\end{equation}
+
+Here are the necessary (and all) dimensions that have to be provided to define completely the convolution axon, and its respective "name" in \verb|theano|:  
+
+\begin{equation}
+\begin{aligned}
+\text{ dimensions } & \text{ what theano calls it } \\ 
+(C_{l-1}, C_l) \in (\mathbb{Z}^+)^2 & \text{ feature map } \\ 
+(W_1 \dots W_d) \in (\mathbb{Z}^+)^d & \text{ filter shape }  \\
+(P_1 \dots P_d) \in (\mathbb{Z}^+)^d & \text{ pool size  }  \\ 
+(L_1 \dots L_d) \in (\mathbb{Z}^+)^d & \text{ image size }  \\
+\end{aligned}
+\end{equation}
+
+EY : 20170807 My question is if max-pooling should be its own "layer" or should be done or included with, after, every convolution.  (?,???)
+
+Make a chart of these dimensions and "size dimensions" should be very useful as a sanity check that the dimensions are correct ("shapes" in theano) and to comprehensively and succinctly describe the entire convolution neural network.  I claim that the entire convolution neural network is completely described by these sets of numbers.  For instance, for the example presented in 
+\href{http://deeplearning.net/tutorial/lenet.html}{Convolutional Neural Networks (LeNet)} for \verb|theano|, the LeNet is succinctly and entirely described as follows:  
+\[
+\begin{aligned}
+%\begin{tabular}{l c c c c }
+& d=2 &  &  & & \\
+& l = & 1  \qquad \, &  2 & 3 & \qquad \, 4  \\
+& (C_{l-1}, C_l ) \qquad \, & (1,20) \qquad \, & (20,50) & & \\
+& (W_1, \dots W_d) & (5,5) \qquad \, &  (5,5) & & \\ 
+& (P_1 \dots P_d) & (2,2) \qquad \, & (2,2) & & \\
+& (L_1\dots L_d) & (28,28) \qquad \, & (12,12) & & \\ 
+& (s_{l-1}, s_l) &                 &              & (50\cdot 4^2, 500) & \qquad \, (500,10)  \\
+\end{aligned}
+%\end{tabular}
+\]
+and also these important relations or checks between convolution axons and from a convolution axon to a DNN (i.e. so-called "fully connected layer") can be checked arithmetically, respectively:
+\begin{equation}
+\begin{gathered}
+	L_i^{(l)} = \frac{L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(l-1)} } \\ 
+s_l = C_{l-1} \prod_{i=1}^d \left( \frac{ L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(l-1)} } \right) 
+\end{gathered}
+\end{equation}
+
+\part{Vision; Computer Vision, 3-dim. Computer Vision, Projections, $\mathbb{R}P^n$}
+
+Cyganek and Siebert (2009) \cite{CySi2009} suggested Hartley and Zisserman (2003) \cite{HaZi2003}
+
+cf. Part I, Camera Geometry and Single View Geometry; Ch. 6 Camera Models; 6.1 Finite cameras of Hartley and Zisserman (2003) \cite{HaZi2003}.  
+
+John Lee (2012) \cite{JLee2012}
+
+
+We have surjective $\pi$, \\
+for $0$ at camera center $C$:  
+
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^d \backslash \lbrace 0 \rbrace \xrightarrow{ \pi } \mathbb{R}P^{d-1}  \xrightarrow{ \varphi_d } \\
+	(x^1 , \dots x^d) \xmapsto{ \pi } \left[ \left( \frac{x^1}{x^d} \dots \frac{x^{d-1}}{x^d} , 1 \right) \right] \mapsto \left( \frac{x^1}{x^d} \dots \frac{x^{d-1}}{x^d} \right) 
+\end{gathered}
+\end{equation}
+
+The smooth manifold $\mathbb{R}P^{d-1}$ has an atlas $\mathcal{A}_{\mathbb{R}P^{d-1}}$: 
+\begin{equation}
+\begin{gathered}
+	\mathcal{A}_{\mathbb{R}P^{d-1} } = \lbrace ( U_i , \varphi_i) \rbrace_{i=1}^d \text{ s.t. } \\ 
+\begin{gathered}
+\begin{aligned}
+	& \varphi_i: U_i \to \mathbb{R}^{d-1} , \qquad \, \forall \, i =1 \dots d \\
+	& \varphi_i([x^1 \dots x^d]) = \left( \frac{x^1}{x^i} \dots \frac{x^{i-1}}{x^i} , \widehat{1}, \frac{x^{i+1}}{x^i} \dots \frac{x^d}{x^i} \right) 
+\end{aligned} \\
+\begin{aligned}
+	& \varphi_i^{-1} : \mathbb{R}^{d-1} \to U_i \\ 
+	& \varphi_i^{-1} (u^1\dots u^{d-1}) = [ (u^1 \dots u^{i-1}, 1, u^i \dots u^{d-1} )]  
+\end{aligned}
+\end{gathered}
+\end{gathered}
+\end{equation}
+with transition functions
+\[
+\begin{gathered}
+	\begin{aligned}
+	& \varphi_j \circ \varphi_i^{-1} : \mathbb{R}^{d-1} \to \mathbb{R}^{d-1} \\ 
+	& \varphi_j \circ \varphi_i^{-1} (u^1 \dots u^{d-1}) = \left( \frac{u^1}{u^j} \dots \frac{u^{j-1}}{u^j}  , \frac{u^{j+1}}{u^j}  , \dots \frac{u^{i-1}}{u^j} , \frac{1}{u^j} , \frac{u^i}{u^j}   \dots \frac{u^{d-1}}{u^j}  \right)
+\end{aligned}
+\end{gathered}
+\]
+
+Considering the focal length $f$ of the camera lens, so that the camera focuses the image out at a \emph{focal distance} $f$, by geometry, there's a ratio to be obeyed:
+\[
+\frac{\alpha}{f} = \frac{y}{z} \Longrightarrow \alpha = \frac{fy}{z}
+\]
+This is encapsulated in the equivalence relation for $\mathbb{R}P^{d-1}$, namely for so-called \emph{homogeneous coordinates} (Jeffrey Lee (2009)), in that 
+\[
+\forall \, \lambda \in \mathbb{R} \backslash \lbrace 0 \rbrace , [\lambda x^1 \dots \lambda x^d] = [x^1 \dots x^d] 
+\]
+and so 
+\[
+[(x,y,z) ] = [ \left( \frac{x}{z} , \frac{y}{z} , 1 \right) ] = \left[ \left( \frac{fx}{z}, \frac{fy}{z} , f \right) \right]
+\]
+
+Center of projection $C \equiv $ \emph{camera center} $\equiv$ \emph{optical center}  \\
+\emph{principal axis} or \emph{principal ray} of the camera $\equiv$ line from $C$ perpendicular to image plane.  \\
+\emph{principal point} $\equiv $ pt. where principal axis meets image plan.  
+
+\subsubsection{Principal point offset} cf. pp. 155 of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+Consider a point $P_{\text{offset}} = (p^1 \dots p^{d-1}) \in \mathbb{R}^{d-1} = \varphi_d(U_d) \text{ with open } \varphi_d \subset \mathbb{R}P^{d-1}$.  
+
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^d \xrightarrow{ \pi } \mathbb{R}P^{d-1} \xrightarrow{ \varphi_d  } \mathbb{R}^{d-1}  \xrightarrow{ f\cdot } \mathbb{R}^{d-1} \xrightarrow{ + P_{\text{offset}} } \mathbb{R}^{d-1} \xrightarrow{ \varphi_d^{-1} } \mathbb{R}P^{d-1}  \\
+\begin{gathered}
+(x,y,z) \xmapsto{ \pi } [(x,y,z)] = \left[ \left( \frac{x}{z}, \frac{y}{z},1 \right) \right] \xmapsto{ \varphi_d }  \left( \frac{x}{z} , \frac{y}{z} \right) \xmapsto{ f\cdot } \left( \frac{fx}{z} , \frac{fy}{z} \right) \xmapsto{ + P_{\text{offset}} } \left( \frac{fx}{z} + p_x,  \frac{fy}{z} + p_y \right) \xmapsto{ \varphi_d^{-1}} \\
+ \xmapsto{ \varphi_d^{-1}} \left[ \left( \frac{fx}{z} + p_x , \frac{fy}{z} + p_y ,1\right) \right] = \left[ (fx+p_xz, fy+p_yz, z) \right]
+\end{gathered}
+\end{gathered}
+\end{equation}
+
+And so harmonize this expression or formulation with that for Hartley and Zisserman (2003) \cite{HaZi2003}.   
+\begin{equation}
+\begin{gathered}
+	\mathbb{R}^3 \xrightarrow{ \varphi_d^{-1} \circ (+P_{\text{offset}} ) \circ (f\cdot) \circ \varphi_3 \circ \pi } \mathbb{R}P^2 \\
+(x,y,z) \xmapsto{ \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_3 \circ \pi } [(fx+p_xz, fy+p_yz,z)] \\ 
+\left[ \begin{matrix} f & & p_x \\ & f & p_y \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} x \\ y \\ z \end{matrix} \right] = \left[ \begin{matrix} fx+p_x z \\ fy + p_y z \\ z \end{matrix} \right]
+\end{gathered}
+\end{equation}
+
+\subsubsection{Camera rotation and translation}  cf. pp. 155 of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+We had assumed that $\mathbb{R}^3$ was centered at the camera $C$, camera center.  
+
+In general, consider now this atlas for $\mathbb{R}^3$ (I'll write $\mathbb{R}^d$ to implicitly generalize the space dimensions):  
+\[
+\mathcal{A}_{\mathbb{R}^3} = \lbrace (\mathbb{R}^3, \varphi_C ) ,(\mathbb{R}^3,\varphi_C) \rbrace
+\]
+where $(\mathbb{R}^3, \varphi_C )$ are coordinate system centered at $C$, and $(\mathbb{R}^3, \varphi_O )$ is a coordinate system centered at some general point $O$, representing the "world" we're taking a picture of right now.  $\varphi_0 = \varphi^{-1}_0 = 1$.  
+
+Let $C \in \mathbb{R}^d$, $C= (C^1\dots C^d)$ where the camera is, relative to $O$, origin of $\mathbb{R}^d$.  
+
+Then 
+\[
+\begin{gathered}
+\varphi_C \circ \varphi_O^{-1} = \varphi_C \\ 
+ \varphi_C \circ \varphi_O^{-1}  (x,y,z) = \varphi_C(x,y,z) \equiv \varphi_C(X) = R(X-C) = R^i_{ \  \  j } (X^j-C^j) = X^i_{\text{(cam)} }
+\end{gathered}
+\]
+with $R$ being a rotation matrix.  
+
+We considered, implicitly, the open sets $U_O$, $U_C$ for the coordinate charts $\varphi_O$, $\varphi_C$ which map a point in $\mathbb{R}^d$ to its coordinates in a coordinate frame \emph{centered} at $O$ or $C$, respectively.  Note that $U_0 = U_C = \mathbb{R}^d$.  And so for the projection, Eq. (6.6), (6.7) of Hartley and Zisserman (2003) \cite{HaZi2003}
+
+\[
+\begin{gathered}
+\mathbb{R}^d \xrightarrow{ \varphi_C \varphi_O^{-1} } \mathbb{R}^d \xrightarrow{  \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1}  \\
+(x,y,z) \mapsto R((x,y,z) - C) = (x_{\text{(cam)}},y_{\text{(cam)}},z_{\text{(cam)}}) \xmapsto{  \varphi_d^{-1} \circ (+P_{\text{offset}} ) \circ (f\cdot) \circ \varphi_d \circ \pi } \left[ \begin{matrix} f & & p_x \\ & f & p_y \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} x_{\text{(cam)}} \\ y_{\text{(cam)}} \\ z_{\text{(cam)}} \end{matrix} \right] = \left[ \begin{matrix} fx_{\text{(cam)}}+p_x z_{\text{(cam)}} \\ fy_{\text{(cam)}} + p_y z_{\text{(cam)}} \\ z_{\text{(cam)}} \end{matrix} \right] = \\
+= \left[ \begin{matrix} fR^1_{ \  \  j}(X^j-C^j)+p_x R^3_{ \  \  j}(X^j-C^j) \\ f R^2_{ \  \  j}(X^j-C^j) + p_y R^3_{ \  \  j}(X^j-C^j) \\ R^3_{ \  \  j}(X^j-C^j) \end{matrix} \right] 
+\end{gathered}
+\]
+
+\subsubsection{CCD cameras}
+
+$m_x \equiv $ number of pixels per unit distance in image coordinate $x$  \\
+$m_y \equiv $ number of pixels per unit distance in image coordinate $y$  
+
+\[
+\begin{gathered}
+ \mathbb{R}^d = \varphi_C(\mathbb{R}^d) \xrightarrow{  \varphi_d^{-1} \circ (+P_{\text{offset}} )\circ (f\cdot) \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1} \xrightarrow{ \text{diag}(m_x,m_y,1) } \mathbb{R}P^{d-1} \\ 
+\varphi_C(X) = X_{\text{(cam)}} \mapsto [(fx_{\text{(cam)}} + p_x z_{\text{(cam)}} , fy_{\text{(cam)}} + p_y z_{\text{(cam)}} , z_{\text{(cam)}} ) ] \mapsto [ (\alpha_x x_{\text{(cam)}} + x_0 z_{\text{(cam)}} , \alpha_y y_{\text{(cam)}} + y_0 z_{\text{(cam)}}, z_{\text{(cam)}} )]
+\end{gathered}
+\]
+with $\begin{aligned} & \quad \\
+	& \alpha_x = fm_x \\ 
+& \alpha_y = fm_y \end{aligned}$ and $\begin{aligned} & \quad \\
+	& x_0 = m_x p_x \\ 
+& y_0 = m_y p_y \end{aligned}$
+
+So in general, using composition, 
+\begin{equation}
+\begin{gathered}
+\text{diag}(m_x , m_y , 1) \circ \varphi_d^{-1} \circ ( + P_{\text{offset}} ) \circ (f\cdot)\circ \varphi_d \circ \pi \circ R \equiv \texttt{M} \quad \text{ (pp. 157 of Hartley and Zisserman (2003) \cite{HaZi2003})} = \\
+	= \left[ \begin{matrix} \alpha_x & & x_0 \\ & \alpha_y & y_0 \\ & & 1 \end{matrix} \right] R 
+\end{gathered}
+\end{equation}
+
+\subsubsection{Backprojection of a projective camera; Back-projection of points to rays}  
+
+cf. 6.2.2 Action of a projective camera on points; Back-projection of points to rays of Hartley and Zisserman (2003) \cite{HaZi2003}.  
+
+Given $(u,v) \equiv (u^1 ,u^2) \in \mathbb{R}^{d-1} = \varphi_d(U_d)$ and, given $C \in \varphi_O(\mathbb{R}^d)$ (so $C$ is the camera center with respect to the origin of coordinate chart at $O$), and given focal length $f$, then
+\[
+\begin{gathered}
+\mathbb{R}^{d-1} = \varphi_d(U_d) \xrightarrow{ -P_{\text{offset}} } \mathbb{R}^{d-1}  \xrightarrow{ \frac{1}{f} } \mathbb{R}^{d-1} \xmapsto{ \varphi_d^{-1} } \mathbb{R}P^{d-1} \xrightarrow{ \pi^{-1} } \mathbb{R}^d \\
+	(u',v') \xmapsto{ -P_{\text{offset}} } (u,v) = (u'-p_x,v'-p_y)  \xmapsto{ \frac{1}{f} } \left( \frac{u}{f}, \frac{v}{f} \right) \xmapsto{ \varphi_d^{-1} } \left[ \left( \frac{u}{f}, \frac{v}{f},1 \right) \right] = \left[ \left( \frac{uz}{f} , \frac{vz}{f} , z \right) \right] \xrightarrow{ \pi^{-1} } \left( \frac{uz}{f}, \frac{vz}{f} , z \right)  \\
+\Longrightarrow  \left[ \begin{matrix} \frac{z}{f} & 0 \\  & \frac{z}{f} \\ & \end{matrix} \right] \left[ \begin{matrix} u \\ v \end{matrix} \right] + z \left[ \begin{matrix}  0 \\ 0 \\ 1 \end{matrix} \right] = (x,y,z)
+\end{gathered}
+\]
+and so $z$, the "depth" of pt. $X\in \mathbb{R}^3 = \mathbb{R}^d$ must be given.  
+
+
+
+\subsubsection{Pl\"{u}cker coordinates}  
+
+Let $x,y \in L \subset \mathbb{R}^d$ (e.g. $d=3$), $x\neq y$.  \\
+Define $d:= x-y \in \mathbb{R}^d$.  \\
+"moment" $m:= x\wedge y = x^i e_i \wedge y^j e_j = x^i y^j e_i \wedge e_j = x^i y^j \epsilon_{ijk} e_k \in \mathbb{R}^d$.  
+
+So $d\cdot m =0$, since $(x-y)\cdot (x\wedge y) =0$.  
+
+Consider 
+\[
+[(d^1\dots d^d,m^1 \dots m^d)] = [(d^1,d^2,d^3,m^1,m^2,m^3)] \in \mathbb{R}P^5
+\]
+In a $\mathbb{R}P^3 = \mathbb{R}P^d$, let $L\subset \mathbb{R}P^^3$, let $x,y \in \mathbb{R}P^3$, $x\neq y$.  
+
+\textbf{Pl\"{u}cker coordinates} $p_{ij} = x_i y_j - x_j y_i $, $i,j=0,1,2,3$.  
+
+So $p_{ij} = [(p_{01}, p_{02}, p_{03}, p_{23}, p_{31}, p_{12}) ] \in \mathbb{R}P^5$.  
+
+Another way to write this:  
+\[
+\begin{gathered}
+	M:= \left[ \begin{matrix} x_0 & y_0 \\ x_1 & y_1 \\ x_2 & y_2 \\ x_3 & y_3 \end{matrix} \right] \\
+ p_{ij}  =\text{det}(M_i*, M_{j*} )
+\end{gathered}
+\]
+For $x_0=1$, 
+\begin{equation}
+\begin{gathered}
+d=(p_{01},p_{02}, p_{03}) \\
+m = (p_{23}, p_{31},p_{12}) \end{gathered}
+\end{equation}
+
+Given $p_{ij} = [(d,m)]$, 
+\begin{equation}
+0 = d\times q - m, \qquad \, \forall \, q \in \text{ line } L_0
+\end{equation}
+cf. \url{http://orb.olin.edu/plucker.pdf}
+
+
+
+\url{http://ags.cs.uni-kl.de/fileadmin/inf_ags/3dcv-ws11-12/3DCV_WS11-12_lec05.pdf}  
+
+Prof. D. Stricker.  3D Computer Vision, Winter Semester 2011-2012.  
+
+\subsection{Fundamental matrix, $F$}
+
+Fundamental matrix $F$ is a rank $2=d-1$ matrix.  
+
+\subsubsection{Examples with 2 cameras; Fundamental matrix $F$}
+
+cf. Example I of \url{http://ags.cs.uni-kl.de/fileadmin/inf_ags/3dcv-ws11-12/3DCV_WS11-12_lec05.pdf}  
+
+Compute the fundamental matrix of a parallel camera stereo rig.  
+
+$C=0=\varphi_0(0) \in \mathbb{R}^3 = \varphi_0(\mathbb{R}^3) $; \quad \, $R=1$.  $P_{\text{offset}}=0$.  $f=f'$  \\
+$C'=(t_x,0,0) \in \mathbb{R}^3 = \varphi_0(\mathbb{R}^3)$, $R=1$.  $P_{\text{offset}}' = 0$.  
+
+\[
+\begin{gathered}
+	\mathbb{R}^d = \varphi_0(\mathbb{R}^3) \xrightarrow{ \varphi_d^{-1} f \circ \varphi_d \circ \pi } \mathbb{R}P^{d-1} \\ 
+ X \mapsto \varphi_d^{-1}(f\left( \frac{x}{z}, \frac{y}{z} \right) ) = \left[ \left( \frac{fx}{z}, \frac{fy}{z},1 \right) \right] = [ (fx,fy,z) ] = \\
+= KX=\left[ \begin{matrix} f & & \\ & f & \\ & & 1 \end{matrix} \right] X
+\end{gathered}
+\]
+
+For the other image point on the other camera, 
+\[
+\begin{gathered}
+	\mathbb{R}^d = \varphi_0(\mathbb{R}^3) \xrightarrow{ \varphi_d^{-1} f \circ \varphi_d \circ \pi (-C)} \mathbb{R}P^{d-1} \\ 
+X \mapsto \varphi_d^{-1} \left( f\left( \frac{x-t_x}{z} , \frac{y}{z} \right) \right) = \left[ \left( \frac{f(x-t_x )}{z} , \frac{fy}{z},1\right) \right] = [(f(x-t_x), fy,z) ] = K(X-C')
+\end{gathered}
+\]
+
+Plugging into the formula for $F$:  
+\[
+\begin{gathered}
+	F= ((K')^{-1})^T(\mathbf{t} \times (RK^{-1}) ) = 
+\left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} & & \\ & & -t_x \\ & t_x & \end{matrix} \right] \left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] = \left[ \begin{matrix} 1/f & & \\ & 1/f & \\ & & 1 \end{matrix} \right] \left[ \begin{matrix} & & \\ & & -t_x \\ & \frac{t_x}{f} & \end{matrix} \right] = \left[ \begin{matrix} & & \\ & & -t_x/f \\ & \frac{t_x}{f} & \end{matrix} \right] = \frac{t_x}{f} \left[ \begin{matrix} & & \\ & & -1 \\ & 1 & \end{matrix} \right]
+\end{gathered}
+\]
+with $R=1$ in this case. 
+
+Since $F$ homgeneous, $F\sim \left[ \begin{matrix} & & \\ & & -1 \\ & 1 & \end{matrix} \right]$.  
+
+\[
+\begin{gathered}
+v^T F u \equiv (u')^T Fu \equiv (x')^T Fx = \left( \frac{ f(x-t_x)}{z}, \frac{fy}{z} ,1 \right) \left[ \begin{matrix} & & \\ & & -t_x \\ & t_x & \end{matrix} \right] \left[ \begin{matrix} \frac{fx}{z} \\ \frac{fy}{z} \\ 1 \end{matrix} \right] = \left( \frac{ f(x-t_x)}{z} , \frac{fy}{z} ,1\right) \left[ \begin{matrix} 0 \\ -t_x \\ \frac{fy}{z} t_x \end{matrix} \right] = 0 
+\end{gathered}
+\]
+
 
 
 
@@ -2383,7 +3727,7 @@ Consider then this cost functional, also known as the ``Lagrangian'', which we w
 Of note, we introduced \emph{Lagrangian multipliers} $\lambda_i$, $\forall i \in 1,2\dots m$, $\lambda_i \in \mathbb{R}$, to account for each of the constraints given in Eq. \ref{Eq:ineqconstraints}.  
 
 The Karush-Kuhn-Tucker (KKT) condition tells us that $(\theta,b)$ makes $\mathcal{L}$ a minimum for a certain $\lambda$ (and that these $\lambda_i$'s exist), and that these relations hold:\cite{Nowa2008}, \cite{ChZa2013}:
-\begin{equation}\label{Eq:partialsL2}
+\begin{equation}\label{Eq:partialsL}
   \begin{aligned}
     & \frac{ \partial \mathcal{L}}{ \partial \theta_j} = 0 = \theta_j - \sum_{i=1}^m \lambda_i y^{(i)} x_j^{(i)} \qquad \, j=1,2\dots d \\ 
     & \frac{ \partial \mathcal{L}}{ \partial b} = 0 = -\sum_{i=1}^m \lambda_i y^{(i)}
@@ -2401,7 +3745,7 @@ $\forall \, i =1,2,\dots m$, we want input data example $X^{(i)}$ to be ``far aw
 \sum_{j=1}^m\lambda_iy^{(i)} =0
   \end{equation}
 
-It's interesting to see that the step in taking the partial derivatives of $\mathcal{L}$ in Eq. \ref{Eq:partialsL2} is analogous to the construction/computation of dual ``conjugate'' variables, conjugate momentum, in physics.  
+It's interesting to see that the step in taking the partial derivatives of $\mathcal{L}$ in Eq. \ref{Eq:partialsL} is analogous to the construction/computation of dual ``conjugate'' variables, conjugate momentum, in physics.  
 
 Notice then that
 \begin{equation}
@@ -2451,6 +3795,27 @@ Simply add $\xi$ to the objective function to implement penalty (for ``too much 
 \begin{equation}
   f_0(\theta,b,\mathbf{\xi}) = \frac{1}{2} \| \theta \|^2 + C\sum_{i=1}^m \xi_i
   \end{equation}
+
+cf. Andrew Ng's Support Vector Machines Large Margin Intuition, The mathematics behind large margin classification (optional), Kernels II,   
+
+\subsubsection{SVM parameters}  
+
+$C ( = \frac{1}{\lambda})$.  Large $C$: lower bias, high variance.  (small $\lambda$) \\
+Small $C$: Higher bias, low variance (large $\lambda$)
+
+For 
+\[
+\exp{ \left( - \frac{ \| x - l^{(i) } \|^2 }{ 2\sigma^2 } \right) }
+\]
+
+$\sigma^2$.  Large $\sigma^2$: Features $f_i$ vary more smoothly.  Higher bias, lower variance.  
+
+Small $\sigma^2$.  Features $f_i  $ vary less smoothly.  
+
+Lower bias, higher variance.  
+
+
+
 
 So then the total Lagrangian becomes
 \begin{equation}
@@ -2770,14 +4135,19 @@ where
 
 Finally, to tie it back into my original motivation, now that SVM is natively implemented in theano, it would be interesting to try to develop (and of course find appropriate datasets to train and test on) a DNN that will have as its ``outer'' or last layer to be a SVM.  Since SVM is now part of the theano computational graph, optimization (the so-called ``backpropagation'' step) will be done automatically and simply with theano's \verb|grad|, on all the parameters or ``weights'' of the entire model.  
 
-\part{Image Preprocessing; Image Classification}
+\section{Image Preprocessing; Image Classification}
 
-\section{Links, Reading, Online Searches}
+\subsection{Links, Reading, Online Searches}
 
 \begin{itemize}
 \item \href{http://www.ippatsuman.com/2014/08/13/day-and-night-an-image-classifier-with-scikit-learn/}{Day and night: an image classifier with scikit-learn, Giuseppe Cardone, GCardone}
   \end{itemize}
 
+\section{HOG}
+
+\url{http://www.learnopencv.com/histogram-of-oriented-gradients/}
+
+\url{http://www.cs.cornell.edu/courses/cs6670/2011sp/lectures/lec02_filter.pdf}
 
 
 \section{Deep Support Vector Machines (SVM)}
@@ -2785,7 +4155,6 @@ Finally, to tie it back into my original motivation, now that SVM is natively im
 \subsection{Right $R$-modules}
 
 Consider, as a start, the total given (training) input data, consisting of $m\in \mathbb{Z}^+$ (training) examples, each example, say the $i$th example, being represented by a "feature" vector of $d$ features, $X^{(i)} \in \mathbb{K}^d$, where $\mathbb{K}$ is a field or (categorical) classes, i.e. as examples of fields, the real numbers $\mathbb{R}$, or integers $\mathbb{Z}$, so that $\mathbb{K} = \mathbb{R},\mathbb{Z}$ or $\mathbb{K} = \lbrace 0 ,1,\dots K-1\rbrace$, where $K$ is the total number of classes that a feature could fall into.  Note that for this case, the case of $\mathbb{K}=\lbrace 0 ,1,\dots K-1\rbrace$, for $K$ classes, though labeled by integers, this set of integer labels is \emph{not} equipped with ordered field properties (it is meaningless to say $0<1$, for example), nor the usual field (arithmetic) operations (you cannot add, subtract, multiply, or even take the modulus of these integers).  How can we "feed into" our machine such (categorical) class data?  Possibly, we should intuitively think of the Kronecker Delta function:
-
 \[
 \delta_{iJ} = \begin{cases} 0 & \text{ if } i\neq J \\ 
  1 & \text{ if } i = J \end{cases}
@@ -2964,38 +4333,14 @@ X^{(i)}  & a^{(L)} \\
 \end{tikzpicture} 
 \end{equation}
 
-\subsubsection{Cost Functional}
 
-Cost functional $J$, to first input in the output values $y$.  So
-\begin{equation}
-\begin{aligned}
-&  J: (\mathbb{R}^d \times \mathbb{R}^K)^m \to L(\mathbf{ (\Theta, b) }, \mathbb{R} ) \\ 
-& J: (X,Y) \mapsto J_{(X,Y)} \equiv J 
-\end{aligned}
-\end{equation}
-for a ``vector-valued'' regression, with the usual linear regression being the case of $K=1$.
+\part{Natural Language Processing (NLP) }
 
-Then, we can find the cost $J((\Theta, b))$, for a particular choice of the parameters, $(\Theta,b) \in \mathbf{ (\Theta,b)}$:
-\begin{equation}
-\begin{aligned}
-%&  J_{(X,Y)} \equiv J : \mathbf{ ( \Theta,b) } \to \mathbb{R} \\ 
-& J: (\Theta,b) \to J(\Theta,b)
-\end{aligned}
-\end{equation}
-i.e. $J \in C^{\infty}((\Theta,b))$ (hopefully $J$ is smooth or at least $C^2$ differentiable, so that a Hessian can be obtained).
+\url{https://github.com/davidadamojr/TextRank/blob/master/textrank/__init__.py}
 
+\url{https://web.eecs.umich.edu/~mihalcea/papers/mihalcea.emnlp04.pdf}
 
-For the above $\mathbf{ (\Theta,b)}$ was notation or shorthand as follows:
-
-\[
-\mathbf{ (\Theta,b ) } \equiv (\text{Mat}_{\mathbb{R}}(s_1,s_2) \times \mathbb{R}^{s_2}) \times (\text{Mat}_{\mathbb{R}}(s_2,s_3) \times \mathbb{R}^{s_3} ) \times \dots \times (\text{Mat}_{\mathbb{R}}(s_{L-1},s_L) \times \mathbb{R}^{s_L} )
-\]
-
-
-
-
-
-\part{Natural Language Processing (NLP)}
+\url{https://stackoverflow.com/questions/25315566/unicodedecodeerror-in-nltks-word-tokenize-despite-i-forced-the-encoding}
 
 \section{TextRank}
 
@@ -3031,6 +4376,9 @@ $0\leq w_{ij} \leq 10$
 
 \href{http://www.aclweb.org/anthology/I13-1062}{Topic Ranking}
 
+
+
+
 \part{Notes}
 
 
@@ -3043,9 +4391,344 @@ Recurrent neural network - creates an internal state of the network which allows
 
 ``In sum, for most problems, one could probably get decent performance (even without a second optimization step) by setting the hidden layer configuration using just two rules: (i) number of hidden layers equals one; and (ii) the number of neurons in that layer is the mean of the neurons in the input and output layers.''
 
-\section{Example application: 2017 Global AI Hackathon, San Diego (June 23-25, 2017)}
+
+\url{https://www.quora.com/Natural-Language-Processing-What-are-algorithms-for-auto-summarize-text}
+
+\url{https://arxiv.org/pdf/1602.03606.pdf}
+
 
 \part{Unsupervised Learning}
+
+\section{$k$-means clustering algorithm}
+
+cf. \href{https://www.coursera.org/learn/machine-learning/lecture/93VPG/k-means-algorithm}{Coursera Machine Learning (Ng), Week 8, K-Means Algorithm}
+
+$K$-means algorithm.  
+
+Let $K\in \mathbb{Z}^+$.  \\
+Let training set $\lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace$.  
+
+Randomly initialize $K$ cluster centroids $\mu_1,\mu_2\dots \mu_k \in \mathbb{R}^d$.  
+
+$\forall \, i = 1,2,\dots m$, 
+
+Find $c^{(i)} \, \text{ (Ng's notation) } \equiv k_{(i)} $ s.t. 
+\[
+\min_{k=1,2,\dots K} \| x_{(i)} - \mu_k \|
+\]
+$\forall \, i = 1,2,\dots m$.  
+
+$\forall \, k =1,2,\dots K$, 
+\[
+\mu_k := \frac{1}{ |C_k | } \sum_{ x_j \in C_k} x_j
+\]
+s.t. 
+\[
+\bigcup_{k=1}^K C_k = \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace
+\]
+
+Only guaranteed to converge to local minimizers ($K$-means is NP-hard), polynomial time.  
+
+Optimization objective:
+\begin{equation}
+J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_k) \equiv J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_k) = \frac{1}{m} \sum_{i=1}^m \| x_{(k)} - \mu_{ k_{(i)} } \| 
+\end{equation}
+
+So find 
+\begin{equation}
+\min_{ \substack{ c^{(1)} \dots c^{(m)} \\ \mu_1 \dots \mu_k } } J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_k) \equiv \min_{ \substack{ k_{(1)} \dots   k_{(m)} \\ \mu_1 \dots \mu_k } } J( k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_k) 
+\end{equation}
+
+\url{https://ocw.tudelft.nl/wp-content/uploads/Algoritmiek_Clustering.pdf}
+
+\url{https://github.com/serban/kmeans/blob/master/cuda_kmeans.cu}
+
+It is not possible for the cost function $J$ to sometimes increase (with number of iterations).  There must be a bug in the code.  cf. \href{https://www.coursera.org/learn/machine-learning/lecture/G6QWt/optimization-objective}{Optimization Objective}
+
+1 important example or assumption to be made is the data points are independent of each other.  There exists no dependency between any data points.   
+
+cf. \url{https://www.cse.buffalo.edu//faculty/miller/Courses/CSE633/Chandramohan-Fall-2012-CSE633.pdf}.  This also has references
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/drcBh/random-initialization}{Random Initialization}.  Randomly pick $K$ training examples from $\mathcal{X} \equiv \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \in \mathbb{R}^d \rbrace$.  Then set $\mu_1\dots \mu_K$ to these $K$ examples.  
+
+To avoid local minimization due to particular choice of $\mu_1, \dots \mu_k$, 
+
+For $i=1, \dots $ number of times to randomize, $\lbrace$ 
+Randomly initialize $K$-means \\
+Run $K$-means.  Get $c^{(1)}, \dots c^{(m)} = k_{(1)} \dots k_{(m)}$, $\mu_1\dots \mu_K$  \\
+Compute cost function (distortion) $J(c^{(1)}, \dots c^{(m)}, \mu_1 \dots \mu_K)\equiv J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_K)$ \\
+$\rbrace$
+
+Then pick clustering that gave lowest cost $J(k_{(1)}, \dots k_{(m)}, \mu_1 \dots \mu_K)$
+
+When $K=2-10$, random initialization of random initialization will have a huge advantage.  For $K>10$, not so much.  
+
+\subsubsection{Choosing the value of $K$}
+\href{https://www.coursera.org/learn/machine-learning/lecture/Ks0E9/choosing-the-number-of-clusters}{Choosing the Number of Clusters}
+
+Plot $J$ vs. $K$ (number of clusters).  Find where change in $J$ with increase in $K$ changes itself.  
+
+Suppose you run $K$-means using $K=3$ and $K=5$.  You find that the cost function $J$ is much higher for $K=5$ than for $K=3$.  What can you conclude? 
+
+In the run with $K=5$, $K$-means got stuck in a bad local minimum.  You should try re-running $K$-means with multiple random initializations.  
+
+International Conference on Computational Science, ICCS 2011.  Parallel $k$-Means Clustering for Quantitative Ecoregion Delineation Using Large Data Sets.  Jitendra Kumara, Richard T. Mills, Forrest M. Hoffman, William W. Hargrove.  
+\url{http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.431.3926&rep=rep1&type=pdf}
+
+\subsubsection{Parallel $k/h$-means clustering}
+From Stoffel and Belkoniene (1999) \cite{StBe1999}, 
+Fig. 1 Pseudo code of the $k$-means and $h$-means algorithm:
+\begin{lstlisting}
+function K-MeanMainLoop {
+	assign each object randomly to one cluster;
+	do {
+		for each object t in the database {
+			nC = getNearestMean(t);
+			insertIntoCluster(t,nC);
+			recalculateMeans(t,nC);
+		}
+	} while at least one t changes its cluster
+}
+\end{lstlisting}
+$k$-means.  
+
+\begin{lstlisting}
+function H-MeanMainLoop {
+	assign each object randomly to one cluster;
+	do {
+		for each object t in the database {
+			nC = getNearestMean(t);
+			insertIntoCluster(t,nC);
+		}
+	recalculateMeans(t,nC);
+	} while at least one t changes its cluster
+}
+\end{lstlisting}
+$h$-means.  
+
+
+
+
+\section{Dimensionality Reduction; Principal Component Analysis (PCA), Singular Value Decomposition (SVD)}  
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/0EJ6A/motivation-i-data-compression}{Motivation I: Data Compression}.  
+
+Examples in $\mathbb{R}^2, \mathbb{R}^3$: projection.  
+
+
+\subsection{Datapreprocessing; feature scaling, mean normalization}
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/ZYIPa/principal-component-analysis-algorithm}{Principal Component Analysis Algorithm}
+
+Given a training set $\mathcal{X} = \lbrace x_{(1)}, x_{(2)}, \dots x_{(m)} \rbrace$, 
+
+\subsubsection{Mean normalization}
+
+\begin{equation}
+\mu^j = \frac{1}{m} \sum_{i=1}^m x^j_{(i)}
+\end{equation}
+Then replace $\forall \, i =1\dots m , \, \forall \, j = 1\dots d$, $x^j_{(i)}$ with $x^j_{(i)} - \mu^j$
+
+\subsubsection{Feature Scaling}
+
+
+\subsection{Principal Component Analysis (PCA) algorithm}
+
+\url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+Reduce data from $n$-dims. to $k$-dims.  
+
+Compute "covariance matrix":
+
+\begin{equation}
+\Sigma := \frac{1}{m} \sum_{i=1}^m (X_{(i)})( X_{(i)})^T
+\end{equation}
+
+Compute "eigenvalues" of matrix $\Sigma$.  
+
+2 arbitrary random variables $A,B$ with means $\mu_A,\mu_B$.  
+
+\[
+\text{cov}(A,B) = E[(A-\mu_A) (B-\mu_B)]  \qquad \, (1-dim.)
+\]
+$d$ dimensional case
+\begin{equation}
+\text{cov}(\mathbf{a},\mathbf{b}) = \frac{1}{m-1} \sum_{i=1}^m  (\mathbf{a}-\mathbf{\mu}_A) (\mathbf{b}- \mathbf{\mu}_B)^T = \frac{1}{m-1} \sum_{i=1}^m ( a - \mu_A)_i (b-\mu_B)_j = (\text{cov}(a,b))_{ij}
+\end{equation}
+
+Given data at vectors $\mathcal{X} = \lbrace \mathbf{x}_{(1)}, \mathbf{x}_{(2)}, \dots \mathbf{x}_{(m)} \in \mathbb{R}^d \rbrace$ with mean normalization \emph{done already }  $\mu  \equiv \mu_X = 0 $)
+
+We want covariance 
+\begin{equation}
+	\text{cov}(\mathcal{X})_{jk} \equiv \Sigma_{\mathcal{X}} \equiv \Sigma = \frac{1}{m} \sum_{i=1}^m (X_{(i)} )_j (X_{(i)})_k 
+\end{equation}
+Given data as $R$-module
+\begin{equation}
+\begin{aligned}
+	& X = X_{ i \mu} \qquad \, i = 1\dots m , \, \mu= 1\dots d \\ 
+	& \text{cov}(X)_{\mu \nu } = \Sigma_X \equiv \Sigma = \frac{1}{m} X^T_{ \mu k } X_{k \nu}
+\end{aligned}
+\end{equation}
+
+Suppose $Y:= XP$ for unitary (orthogonal) $P\equiv U$.  Now 
+\[
+X_{i\mu} P_{\mu \nu } = Y_{i\nu} , \qquad \, i = 1,\dots m , \, \nu = 1\dots k , \text{ where } d \equiv n \geq k
+\]
+Then
+\begin{equation}
+	\text{cov}(Y) = \frac{1}{m} Y^T Y = \frac{1}{m} P^T X^T XP = P^T \text{cov}{(X)} P
+\end{equation}
+$\forall \, $ real, symmetric (Hermitian) matrix $A\in \text{Mat}_{\mathbb{K}}(N,N)$, $A = U\Lambda U^T (=U\Lambda U^{\dag})$, $\Lambda = \text{diag}(\lambda_{11}, \dots \lambda_{NN} )$; also $U^T AU = \Lambda$.  
+
+Clearly $(\Sigma_X)^T = \frac{1}{m} (X^TX)^T = \frac{1}{m} X^T X = \Sigma_X$.  So $\text{cov}(Y)$ is a \emph{diagonal matrix}.  
+
+Then
+\begin{equation}
+\begin{gathered}
+	(\Sigma_X P)_{\mu \nu } = ( \Sigma_X )_{\mu \rho } P_{\rho \nu} = (P \text{cov}(Y) )_{\mu \nu } = P_{\mu \rho} \lambda_{ \nu \nu} \delta_{\rho \nu } = \lambda_{ \nu \nu} P_{\mu \nu }
+\end{gathered}
+\end{equation}
+
+The columns of $P$ are eigenvectors (that can be normalized) called \emph{principal components} $p_{\mu}$ of $X$, and construct 
+\[
+P = \left( \begin{matrix} p_1  & p_2  &  \dots & p_d \end{matrix} \right)
+\]
+
+cf. Holl (2016), \url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+\begin{theorem}
+	Principal component $\mathbf{p}_i$ describes axis orthogonal to $p_1 \dots p_{i-1}$ along which original data set has largest variance.  
+\end{theorem}
+
+\begin{proof}
+	Along axis $v\in \mathbb{R}^d$, project $X$ onto $v$.  $Xv = X_{i\nu } v_{\nu}$, \, $i=1\dots m$, $\nu = 1\dots d$.  
+
+\[
+\begin{gathered}
+\text{var}(Xv) = \frac{1}{m-1} (Xv)^T Xv = \frac{1}{m} (Xv)^T_{ \  \  i} (Xv)_i = \frac{1}{m} (v^T X^T)_i X_{i\nu} v_{\nu} = \frac{1}{m} ( v_{\mu} X_{i \mu} ) X_{i\nu } v_{\nu} = v_{\mu} \Sigma_{\mu \nu } v_{\nu}
+\end{gathered}
+\]	
+Normalize the variance
+\begin{equation}
+	\text{var}(Xv) \equiv \text{var}_v(X) = \frac{ v_{\mu} \Sigma_{\mu \nu }v_{\nu } }{ v_{\mu} v_{\mu} } = \frac{ v^T \Sigma v}{ v^T v} 
+\end{equation}
+ 
+Maximize $\text{var}_v(X)$.  
+
+Goal, under given orthogonality constraints, i.e. 
+\[
+v = \text{argmax}_{ \substack{ v\neq 0 \\ v\perp U_{i-1} } } \frac{ v^T \text{cov}(X) v}{ v^T v} 
+\]
+where $U_{i-1}$ is subspace of $\mathbb{R}^d$, spanned by $p_1$ through $p_{i-1}$, called Rayleigh quotient of $\text{cov}(X)$ and $v$.  
+
+Recall \emph{Courant-Fischer minimax thm., Courant-Fischer thm.}: 
+
+\begin{theorem}[Courant-Fischer (minimax) thm.]
+Given $A\in \text{Mat}_{\mathbb{K}}(n,n)$, $A$ Hermitian.  
+
+Let $\lbrace S_k^{\alpha} \rbrace_{\alpha \in I_k} \equiv $ set of all $k$-dim. linear subspaces of $\mathbb{C}^n$, , eigenvalues of $A$, $\lambda_1 \leq \dots \leq \lambda_n$.  
+
+Then 
+\begin{equation}
+\begin{aligned}
+	& \min_{\alpha \in I_k} \max_{ x\in S_k^{\alpha} \backslash \lbrace 0 \rbrace } \frac{ \langle Ax,x \rangle }{  \| x\|^2  } = \lambda_k \\ 	
+	& \max_{\alpha \in I_{n-k+1} } \min_{x  \in S^{\alpha}_{n-k+1}  \backslash \lbrace 0 \rbrace  } \frac{ \langle Ax,x \rangle }{ \| x \|^2 } = \lambda_k
+\end{aligned}
+\end{equation}
+\end{theorem} 
+
+With Courant-Fischer minimax thm., 
+\begin{equation}\label{Eq:PCA01maxvar}
+\max_{ \substack{ v\neq 0 \\ v\perp U_{i-1} } } \frac{ v^T \text{cov}(X) v}{ v^T v} = \lambda_i 
+\end{equation}
+Now, it remains to prove that eigenvector corresponding to $\lambda_i$, fulfills Eq. \ref{Eq:PCA01maxvar}.  
+
+Recall eigenvalue eqn. 
+\[
+\begin{gathered}
+	\Sigma p = \lambda_i p \text{ i.e. } \Sigma_{\mu \rho } p_{\rho \nu} = \lambda_{ \nu \nu} p_{\mu \nu } \\ 
+ \frac{ p_{\nu}^T \text{cov}(X) p_{\nu } }{ p_{\nu}^T p_{\nu} } = \frac{ p_{\nu}^T \Sigma p_{\nu} }{ p_{\nu}^T p_{\nu} } = \frac{ \lambda_{\nu}  p_{\nu}^T p_{\nu} }{ p_{\nu}^T p_{\nu} } = \lambda_{\nu}
+\end{gathered}
+\]
+$\Longrightarrow$ so eigenvectors $\mathbf{p}_{\nu}$ (principal component) maintain maximal variance.  
+
+
+\end{proof}
+
+PCA also allows us to eliminate dims. from dataset while minimizing error incurred, i.e. losing least amount of data.  
+
+\begin{theorem}\label{Thm:PCAminerr}
+PCA minimize total squared error experienced by eliminating all but $\widehat{n}$ of the $n$-dims.  
+\end{theorem}
+
+\begin{proof}
+Represent $\forall \, $ data pt. $x_{(i)} \in \mathbb{K}^n$ as linear combination of orthonormal basis $\mathbf{b}_1 , \dots \mathbf{b}_n$  
+\[
+\mathbf{x}_{(i)} = \sum_{j=1}^n \alpha_{ij} \mathbf{b}_j
+\]
+
+Consider $\widehat{x}_{(i)} = \sum_{j=1}^{\widehat{n}} \alpha_{ij}\mathbf{b}_j , \quad \, \widehat{n} \leq n $
+
+\begin{equation}
+\text{err}_{\widehat{n}} = \sum_{i=1}^m \|  \mathbf{x}_{(i)} - \widehat{x}_{(i)} \|^2 = \sum_{i=1}^m \| \sum_{j=\widehat{n}+1}^n \alpha_{ij} \mathbf{b}_j \|^2 = \sum_{i=1}^m \sum_{ j = \widehat{n}+1}^n \| \alpha_{ij} \|^2 
+\end{equation}
+Since $\mathbf{b}_j$ orthonormal, $\mathbf{b}_j^T \mathbf{b}_j = \sum_{\mu = 1}^n (b_j)_{\mu}(b_j)^{\mu} = 1$, or 
+\[
+\begin{gathered}
+\mathbf{b}_j^T \mathbf{b}_k =\sum_{\mu = 1}^n (b_j)_{\mu} (b_k)^{\mu} = \delta_{jk} \\
+	\alpha_{ij} = \langle \mathbf{x}_{(i)} , \mathbf{b}_j \rangle = \mathbf{b}_j^T \mathbf{x}_{(i)} = (\mathbf{x}_{(i)}^T ) \mathbf{b}_j = x_{(i)}^{\mu} (b_j)_{\mu} 
+\end{gathered}
+\]
+
+Then
+\[
+\begin{gathered}
+\sum_{i=1}^m \sum_{j= \widehat{n}+1}^n \| \alpha_{ij} \|^2 = \sum_{i=1}^m \sum_{j =\widehat{n}+1}^n x^{\mu}_{(i)} (b_j)_{\mu} x^{\nu}_{(i)} (b_j)_{\nu} = \sum_{j=\widehat{n}+1}^n (b_j)_{\mu} \sum_{i=1}^m x^{\mu}_{(i)} x^{\nu}_{(i)} (b_j)_{\nu} = m\sum_{j=\widehat{n}+1}^n (b_j)_{\mu} \Sigma_{\mu \nu} (b_j)_{\nu} = \\
+= m \sum_{j=\widehat{n}+1}^n \frac{b_j^T \Sigma b_j}{ b_j^T b_j }
+\end{gathered}
+\]
+If $\widehat{n} = n-1$, then error minimized by $b_n = p_n $ (Courant-Fishcer Thm.).  
+
+Because $b_j$ orthogonality by def., conclude that $b_j=p_j$ minimized $\text{err}_{\widehat{n}}  \quad \, \forall \, \widehat{n}$  
+\end{proof}
+
+
+Applications of PCA are exploratory data analysis, through dimensional reduction, dimensional reduction itself, and regression problems, since by Thm. 2, \ref{Thm:PCAminerr}, then using PCA minimizes the error incurred by the regression. Holl (2016), \url{https://www5.in.tum.de/lehre/seminare/datamining/ss17/paper_pres/16_pca/paper.pdf}
+
+
+
+
+\href{https://www.coursera.org/learn/machine-learning/lecture/X8JoQ/reconstruction-from-compressed-representation}{Reconstruction from Compressed Representation}  
+
+Suppose we run PCA with $k=n$, so that the dimension of the data is not reduced at all.  (This is not useful in practice but is a good thought exercise.)  Recall that the percent/fraction of variance retained is given by: $\frac{ \sum_{i=1}^k S_{ii} }{ \sum_{i=1}^n S_{ii} }$.  Which of the following will be true?  
+
+$U_{\text{reduce}} $ will be an $n\times n$ matrix.  $x_{\text{approx}} = x$ for every example $x$.  The percentage of variance retained will be 100 \%.  
+
+To choose $k$ (number of principal components), do Singular Value Decomposition (SVD).  With $S$, the diagonal matrix, and its diagonal entries, $s_{\nu \nu}$, $\nu = 1\dots n\equiv d$, then, for given $k$, 
+\[
+\begin{gathered}
+	\frac{ \frac{1}{m} \sum_{i=1}^m \| \mathbf{x}_{(i)} - \mathbf{x}_{\text{approx}, (i)} \|^2 }{ \frac{1}{m} \sum_{i=1}^m \| \mathbf{x}_{(i)} \|^2 } = 1- \frac{ \sum_{\nu =1}^{ \widehat{n} }  \frac{ \langle p_{\nu} , \Sigma p_{\nu}  \rangle }{ \langle p_{\nu} , p_{\nu} \rangle } }{ \sum_{\nu=1}^n \frac{ \langle p_{\nu} , \Sigma p_{\nu} \rangle }{ \langle p_{\nu}, p_{\nu} \rangle } } = 1 - \frac{ \sum_{\nu=1}^{\widehat{n} } s_{\nu \nu } }{ \sum_{i=1}^n s_{\nu \nu } }
+\end{gathered}
+\]
+
+\subsubsection{Supervised learning speedup}  cf. \href{https://www.coursera.org/learn/machine-learning/lecture/RBqQl/advice-for-applying-pca}{Advice for Applying PCA}.   Run PCA only on training set.  
+
+
+\textbf{Bad use of PCA: To prevent overfitting}.  
+
+It's not what PCA does.  Use regularization instead to address overfitting.  
+
+\textbf{PCA is sometimes used where it shouldn't be}.  (e.g. Design of ML system).  
+
+How about doing the whole thing without using PCA?
+
+Before implementing PCA, first try running whatever you want to do with the original/raw data $x_{(i)}$.  Only if that doesn't dow hat you want, then implement PCA and consider using $z_{(i)}$.  
+
+
+
+Ng uses PCA to speed up learning algorithms alot..  
+
+Also, remember compress data, reduce memory data requirements.  
 
 \section{PageRank}  
 
@@ -3332,229 +5015,9 @@ Store column indices $j\in \lbrace 1,2, \dots N_j \rbrace$ (notice "$1$-based co
 $j_{ik} =0$ if there is $0$ entry for $A_{ij}=0$.  
 
 
-\part{Convolution Neural Networks (CNN)}  
-
-\subsection*{Convolution}
-
-define \textbf{convolution} of $f,g$ on $\mathbb{R}^n$
-\begin{definition}
-	\begin{equation}  f* g(x) = \int_{ \mathbb{R}^n } f(x-y)g(y)dy \end{equation}
-\end{definition}
-Note $f*g = g*f$ by change of variables.  
-
-
-Now
-\[
-\begin{gathered}
-y(t) = \int_{-\infty}^{\infty}x(\tau)h(t-\tau)d\tau = \int_{-\infty}^{\infty} d\tau \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) e^{i\omega \tau} d\omega h(t-\tau) e^{-i \omega t} e^{-\omega t} = \frac{1}{2\pi} \int_{-\pi}^{\pi} \widehat{x}(\omega) \widehat{h}(\omega) e^{i\omega t} d\omega \\ 
-\Longrightarrow \widehat{y}(\omega) = \widehat{x}(\omega) \widehat{h}(\omega)
-\end{gathered}
-\]
-
-Discrete case: if $f,g$ are \emph{discrete}, i.e. $\begin{aligned} & \quad \\
-& f = f(i) \\
-& g = g(j) \end{aligned}$, $i,j \in \mathbb{Z}$, then
-\[
-\int_{-\infty}^{\infty} dy f(x-y)g(y) = \sum_{k=-\infty}^{\infty} f(n-k) g(k) = (f*g)(n)
-\]
-
-\section{Images, and generalization of Images as multilinear mappings; Convolution by a filter (stencil $c$)}
-
-Given image of size $L_x \times L_y$, i.e. $(L_x,L_y)\in ( \mathbb{Z}^+)^2$.  An image really is a "designated" or "particular," "fixed" mapping $f$.  
-
-\[
-\begin{gathered}
-f: \lbrace 0 , \dots L_x- 1\rbrace \times \lbrace 0 \dots L_y-1 \rbrace \to \lbrace 0 \dots 255 \rbrace^4 \\ 
-f(x,y) = (f^{(r)}(x,y), f^{(b)}(x,y), f^{(g)}(x,y), f^{(\alpha)}(x,y))
-\end{gathered}
-\]
-Note that $f$ consists of the usual 4 "channels" for rgb color with $\alpha$ denoting "hue."  
-
-Generalize this to the following multilinear mapping:  
-
-with size dimensions $L_1 \times L_2 \times \dots \times L_d, (L_1, L_2 \dots L_d)\in (\mathbb{Z}^+)^d$, 
-\begin{equation}
-\begin{gathered}
-f: \lbrace 0 \dots L_1 - 1 \rbrace \times  \lbrace 0 \dots L_2 - 1 \rbrace \times \dots \times  \lbrace 0 \dots L_d - 1 \rbrace \to \mathbb{K}^C ; \qquad \, C\in \mathbb{Z}^+ , \, \mathbb{K} = \mathbb{R} \text{ or } \mathbb{Z} \\ 
-f(x_1,x_2 \dots x_d) = (f^{(1)}(x_1,x_2,\dots x_d), f^{(2)}(x_1,x_2,\dots x_d), \dots f^{(C)}(x_1,x_2,\dots x_d) )
-\end{gathered}
-\end{equation}
-
-\subsection{Filter (stencil) $c$ }
-
-For the filter (i.e. stencil) $c$, stipulate that $W$'s are odd, (the letter $W$ denote stencil width or filter width).  
-
-\[
-\begin{gathered}
-	(\nu_x,\nu_y) \in \lbrace 0 \dots W_x-1\rbrace \times \lbrace 0 \dots W_y-1 \rbrace \\
-	c : \lbrace 0 , \dots W_x -1\rbrace \times \lbrace 0, \dots W_y-1 \rbrace \to (\mathbb{K})^C  \\
-	c(\nu_x,\nu_y) \mapsto c(\nu_x,\nu_y)=(c^{(1)}(\nu_x,\nu_y),c^{(2)}(\nu_x,\nu_y), \dots c^{(C)}(\nu_x,\nu_y)) 
-\end{gathered}
-\]
-
-In general, 
-\begin{equation}
-\begin{gathered}
-	(\nu_1, \nu_2 \dots \nu_d) \in \lbrace 0 , \dots , W_1-1 \rbrace \times \lbrace 0 , \dots , W_2-1 \rbrace \times \dots \times \lbrace 0 , \dots , W_d-1 \rbrace   \\
-	c: \lbrace 0 , \dots W_1 - 1 \rbrace \times \dots \times \lbrace 0 , \dots W_d - 1 \rbrace \to (\mathbb{K})^C  \\
-	c(\nu_1 , \nu_2 \dots \nu_d) \mapsto (c^{(1)}(\nu_1 , \dots \nu_d) ,\dots c^{(C)}(\nu_1 \dots \nu_d) )
-\end{gathered}
-\end{equation}
-
-This filter (stencil) operation, $c\in L(\lbrace 0 \dots W_1 - 1\rbrace \times \dots \times \lbrace 0 ,\dots W_d - 1\rbrace , (\mathbb{K})^C)$, can be isomorphically mapped to a "matrix" or "tensor" of values (but we can only say that it gets mapped into elements in the space of the Cartesian product of vector spaces $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2} \times \dots \times (\mathbb{K}^C)^{W_d} \equiv (\mathbb{K}^C)^{W_1 W_2 \dots W_d}$.  We cannot say that it gets mapped to a tensor.  We need to require that this Cartesian product have an equivalence relation be "quotient"-ed out.  For example, if for $(\mathbb{K}^C)^{W_1} \times (\mathbb{K}^C)^{W_2}$, the equivalence relation is of the form $(v_1 + v_2,w) - (v_1,w) - (v_2,w), (v,w_1+w_2)-(v,w_1)-(v,w_2), c(v,w)-(cv,w), c(v,w)-(v,cw)$, $\forall \, v_1,v_2,v \in (\mathbb{K}^C)^{W_1}$, $\forall \, w_1,w_2,w \in (\mathbb{K}^C)^{W_2}$, $c\in \mathbb{K}$.  We must take the quotient according to this equivalence relation.  Then we need to check if this produces the universality property of tensors in the view point of category theory).  
-
-For the sake of notation, since surely $W_i$ is an odd number, then $\forall \, i = 1\dots d$, $W_i = 2h_i + 1$, $h_i \in \mathbb{Z}^+$.  Division with integers yields the "floor."  Keep that mind in the notation of $W_i/2$.  
-
-Then consider the \emph{discrete convolution} $g=c*f$: 
-\begin{equation}\label{Eq:DiscreteConvolution}
-\begin{gathered}
-g^{(\alpha)}(i_1, i_2 \dots i_d) = \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
-\end{gathered}
-\end{equation}
-For the $d=2$ case, 
-\[
-\begin{gathered}
-g^{(\alpha)}(i,j) = \sum_{\nu_1=0}^{W_1-1}\sum_{\nu_2=0}^{W_2-1} c^{(\alpha)}(\nu_1, \nu_2)f^{(\alpha)}(i+\nu_1 - h_1, j +\nu_2 - h_2)
-\end{gathered}
-\]
-
-Unless there were specified boundary conditions, observe that for $g$, 
-\[
-\begin{gathered}
-h_1 \leq i_1 \leq L_1 - 1 - h_1 \\
-h_2 \leq i_2 \leq L_2 - 1 - h_2 \\
-\vdots \\ 
-h_d \leq i_d \leq L_d - 1 - h_d \\
-\end{gathered}
-\]
-and so observe that unless boundary conditions for $f$ is specified with additional assumptions, 
-\begin{equation}
-g:\lbrace 0 \dots L_1 -1 - 2h_1 \rbrace \times \lbrace 0 \dots L_2 -1 - 2h_2 \rbrace \times \dots \times \lbrace 0 \dots L_d -1 - 2h_d \rbrace  \to \mathbb{K}^C
-\end{equation}
-$g$ is "smaller" than $f$ by $\frac{W_1}{2} , \frac{W_2}{2} \dots \frac{W_d}{2}$ in each of dims. $f$ "shrank" to.  
-
-\section{Convolution Axon}
-
-Recall the $l$th axon of the deep neural network (DNN), which consists of the $l-1$th layer, $a^{(l-1)}$ which is the "input" of this axon and the $l$th layer, $a^{(l)}$ the "output" of this axon.  Others call this the "fully-connected layer."  
-
-
-
-\begin{equation}
-\begin{tikzpicture}[framed]
-\matrix (m) [matrix of math nodes, row sep=2.1em, column sep=4em, minimum width=1.5em]
-{
-	\text{\textbf{Mod}}_{R^{(l-1)}} & \text{\textbf{Mod}}_{R^{(l)}}  & \text{\textbf{Mod}}_{R^{(l)}} \\
-	(\mathbb{K}^{s_{l-1}})^m  & (\mathbb{K}^{s_l})^m & ( \mathbb{K}^{s_l})^m  \\ 
-	a^{(l-1)}  & z^{(l)} & a^{(l)} \\ 
-};
-\path[->]
-(m-1-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-1-2)
-(m-1-2) edge node [above] {$ \psi^{(l)} \odot $} (m-1-3)
-;
-\path[->]
-(m-2-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-2-2)
-(m-2-2) edge node [above] {$ \psi^{(l)} \odot $} (m-2-3)
-;
-\path[|->]
-(m-3-1) edge node [above] {$(\Theta^{(l)}, b^{(l)})$} (m-3-2)
-(m-3-2) edge node [above] {$ \psi^{(l)} \odot $} (m-3-3)
-;
-\end{tikzpicture} 
-\end{equation}
-with 
-\begin{equation}
-\begin{gathered}
-\begin{gathered}
-z^{(l)} := a^{(l-1)} \Theta^{(l)} + b^{(l)} \\
-(z^{(l)})_j = (a^{(l+1)})_{\mu} \Theta^{\mu}_{\ \  j}
-\end{gathered} \qquad \, \\ 
-\text{ e.g. } \Theta^{\mu}_{ \ \  j} \in ( \text{Mat}_{\mathbb{K}}(m,s_{l-1}) )^* \otimes \text{Mat}_{\mathbb{K}}(m,s_l) \cong \text{Mat}_{\mathbb{K}}(s_{l-1},s_l)\\
-a^l := \psi^{(l)}(z^{(l)})
-\end{gathered}
-\end{equation}
-
-Consider again a single "generalized image", as a given element in the space of linear mappings $L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right)$:  
-\begin{equation}
-\begin{gathered}
-L\left( \otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C \right) \ni \\
-\ni (f^{(1)}(x_1,x_2 \dots x_d), f^{(2)}(x_1,x_2 \dots x_d) , \dots f^{(C)}(x_1,x_2 \dots x_d)) \equiv (f^{(1)}),f^{(2)}, \dots f^{(C)} )(x_1,x_2 \dots x_d)
-\end{gathered}
-\end{equation}
-
-For example, for the case of $d=2$, $C=1$, then we have a \emph{grayscale image} of size dimensions $L_1 \equiv H$, $L_2 \equiv W$ (with $H$, $W$ denoting height and width of an image, respectively).  Then 
-\[
-L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}) \ni f(x_1,x_2)
-\]
-e.g. $d=2,C=3$, rgb image (of 3 "channels"):
-\[
-\begin{gathered}
-L(\mathbb{K}^H \times \mathbb{K}^W, \mathbb{K}^3) \ni f(x_1,x_2) = \\
-(f^{(r)}(x_1,x_2),f^{(g)}(x_1,x_2),f^{(b)}(x_1,x_2)) = (f^{(r)}, f^{(g)},f^{(b)})(x_1,x_2)
-\end{gathered}
-\]
-
-Then, as a warm-up, consider the convolution of this single image with a filter (stencil) $c$, as given with Eq. \ref{Eq:DiscreteConvolution}:
-\[
-\begin{gathered}
-g^{(\alpha)}(i_1,i_2 \dots i_d) = \\
-= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} c^{(\alpha)}(\nu_1 \dots \nu_d ) f^{(\alpha)}(i_1 + \nu_1 - \frac{W_1}{2} , i_2 + \nu_2 - \frac{W_2}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) \qquad \, \forall \, \alpha = 1, 2, \dots C
-\end{gathered}
-\]
-
-But we really want to consider $m$ total samples/examples, concurrently.  Let us, for notation, index these samples/examples by $i_m = 0,1,\dots m-1$.  
-
-Also, consider as a change of notation, where we index the components of $c$ and $f$ to be a subscript, as opposed to being a superscript, before:
-\begin{equation}
-\begin{gathered}
-L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C) \ni \\
-\ni (f_1,f_2 \dots f_C)(x_1,x_2 \dots x_d) = (f_1(x_1,x_2 \dots x_d), f_2(x_1\dots x_d), \dots f_C(x_1 \dots x_d))
-\end{gathered}
-\end{equation}
-
-
-
-Then consider the "convolution input layer" to be an element in $ (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m$: 
-\begin{equation}
- (L(\otimes_{i=1}^d \mathbb{K}^{L_i}, \mathbb{K}^C))^m \cong \left( \otimes_{\alpha=1}^C (\otimes_{i=1}^d \mathbb{K}^{L_1}) \right)^m
-\end{equation}
-
-Recall again the filter (stencil) $c$, 
-\begin{equation}
-\begin{gathered}
-c: \otimes_{i=1}^d \lbrace 0 ,1,\dots W_i -1\rbrace \to (\mathbb{K})^C  \\
-c(\nu_1, \nu_2 ,\dots \nu_d) \mapsto (c_1,c_2, \dots c_C)(\nu_1\dots \nu_d) 
-\end{gathered}
-\end{equation}
-
-\begin{equation}
-\begin{gathered}
-f*c = (f*c)_{\alpha}^{(i_m)}(i_1,\dots i_d) = \\
-= \sum_{\nu_1=0}^{W_1-1} \sum_{\nu_2=0}^{W_2-1} \dots \sum_{\nu_d=0}^{W_d-1} f_{\alpha}^{(i_m)}(i_1 + \nu_1 - \frac{W_1}{2}, i_2 + \nu_2 - \frac{W_{\alpha}}{2}, \dots i_d + \nu_d - \frac{W_d}{2}) c_{\alpha}(\nu_1 \dots \nu_d)
-\end{gathered}
-\end{equation}
-
-
-Consider a bias, $b$, as a $R$-module, 
-\[
-b \in \left( L (\otimes_{i=1}^d \lbrace 0 ,1, \dots L_i - 1 - 2h_i \rbrace , \mathbb{K}^C) \right)^m
-\]
-which is "broadcasted" or "copied" $m$ times.  
-
-We can also rewrite this as the following:
-\[
-\left( \otimes_{i=1}^d ( \mathbb{K}^C)^{L_i - 2h_i} \right)^m  
-\]
-
-
-The Convolution axon (or what others call convolution layer) is in a sense a higher-rank generalization of the DNN axon.  
-
-cf. http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf
-
-
 
 
 \end{multicols*}
-
 \begin{thebibliography}{9}
 \bibitem{HTF2009}
 Trevor Hastie, Robert Tibshirani, Jerome Friedman.   \textbf{The Elements of Statistical Learning: Data Mining, Inference, and Prediction}, Second Edition (Springer Series in Statistics) 2nd ed. 2009. Corr. 7th printing 2013 Edition.  ISBN-13: 978-0387848570.  \url{https://web.stanford.edu/~hastie/local.ftp/Springer/OLD/ESLII_print4.pdf}
@@ -3584,6 +5047,28 @@ Kurt Hornik. ``Approximation Capabilities of Muitilayer Feedforward Networks.'' 
 
 \bibitem{HSW1989}
 Kurt Hornik. Maxwell Stinchcombe and Halbert White.  ``Multilayer Feedforward Networks are Universal Approximators.''  \textbf{Neural Networks}, Vol. 2, pp. 359-366, 1989.  
+
+
+\bibitem{JZS2015}
+Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever.  "An Empirical Exploration of Recurrent Network Architectures."  \emph{Proceedings of the 32 nd International Conference on Machine Learning}, Lille, France, 2015. JMLR: W\&CP volume 37.
+
+\bibitem{GBC2016}
+Ian Goodfellow, Yoshua Bengio, and Aaron Courville.  \textbf{Deep Learning} (Adaptive Computation and Machine Learning series).  The MIT Press (November 18, 2016).  
+
+
+
+
+% EY : 20171024  
+\bibitem{BrCh2016}
+Jacob C. Bridgeman, Christopher T. Chubb.  \emph{Hand-waving and Interpretive Dance: An Introductory Course on Tensor Networks}.  
+\href{arXiv:1603.03039}{https://arxiv.org/abs/1603.03039} [quant-ph]
+
+
+
+
+
+
+
 
 \bibitem{Nowa2008}
 Thomas Nowak.  ``Implementation and Evaluation of a Support Vector Machine on an 8-bit Microcontroller.''  Univ.Ass. Dipl.-Ing. Dr.techn. Wilfried Elmenreich Institut f\"{u}r Technische Informatik Fakult\"{a}t f\"{u}r Informatik Technische Universit\"{a}t Wien.  Juli 2008.  \url{https://www.lri.fr/~nowak/misc/bakk.pdf}
@@ -3616,6 +5101,21 @@ Hubert Nguyen. \textbf{GPU Gems 3}.  Addison-Wesley Professional (August 12, 200
 \bibitem{Pedr2011}
   Scikit-learn: Machine Learning in Python, Pedregosa \emph{et al.}, \textbf{JMLR 12}, pp. 2825-2830, 2011.
 
+
+\bibitem{CySi2009}
+Bogus\l{} aw Cyganek.  J. Paul Siebert.  \textbf{An Introduction to 3D Computer Vision Techniques and Algorithms}.  Wiley.  2009.  ISBN 978-0-470-01704-3
+
+ \bibitem{HaZi2003}
+Richard Hartley.  Andrew Zisserman.  \textbf{Multiple View Geometry in Computer Vision}  Second Edition.  \emph{Cambridge University Press.}  2003.  ISBN-13 978-0-511-18618-9 eBook (EBL)
+
+\bibitem{JLee2012}
+John Lee, \textbf{Introduction to Smooth Manifolds} (Graduate Texts in Mathematics, Vol. 218), 2nd edition, Springer,  2012, ISBN-13: 978-1441999818
+
+\bibitem{JLee2009}
+Jeffrey M. Lee. \textbf{Manifolds and Differential Geometry}, \emph{Graduate Studies in Mathematics} Volume: 107, American Mathematical Society, 2009. ISBN-13: 978-0-8218-4815-9
+
+
+
 \bibitem{ChLi2011}
   C.-C. Chang and C.-J. Lin. \emph{LIBSVM : a library for support vector machines}. \textbf{ACM Transactions on Intelligent Systems and Technology}, 2:27:1--27:27, 2011. 
 
@@ -3638,10 +5138,40 @@ Page, Lawrence and Brin, Sergey and Motwani, Rajeev and Winograd, Terry.  "The P
 \bibitem{TUMHPC2016}
 Prof. Dr. Michael Bader, with Alexander P\"{o}ppl, Valeriy Khakhutskyy (Tutorials).  High Performance Computing (HPC) - Algorithms and Applications - Winter 16/17.  Informatics V - Scientific Computing.  Technical University of Munich (TUM)
 \url{https://www5.in.tum.de/wiki/index.php/HPC_-_Algorithms_and_Applications_-_Winter_16}
-  
 
-\bibitem{ELiebMLoss2001}
-Elliott H. Lieb and Michael Loss, \textbf{Analysis} (Graduate Studies in Mathematics), Book 14, American Mathematical Society, 2nd edition, 2001. ISBN-13: 978-0821827833
+
+\bibitem{AnNg}
+Andrew Ng.  \href{https://www.coursera.org/learn/machine-learning/home/welcome}{Machine Learning}.  \href{https://www.coursera.org}{coursera}
+
+
+\bibitem{StBe1999}
+Kilian Stoffel and Abdelkader Belkoniene.  \emph{Parallel $k/h$-Means Clustering for Large Data Sets}.  Euro-Par'99, LNCS 1685, pp. 1451-1454, 1999.  Springer-Verlag Berlin Heidelberg 1999
+
+\url{https://grid.cs.gsu.edu/~wkim/index_files/papers/parkh.pdf}
+
+\bibitem{theano}
+Theano Development Team. \href{http://arxiv.org/pdf/1605.02688.pdf}{“Theano: A Python framework for fast computation of mathematical expressions”}. 
+
+\bibitem{JRotman2010}
+Joseph J. Rotman, \textbf{Advanced Modern Algebra} (Graduate Studies in Mathematics) 2nd Edition, American Mathematical Society; 2 edition (August 10, 2010), ISBN-13: 978-0821847411
+
+\bibitem{JLee2009}
+Jeffrey M. Lee. \textbf{Manifolds and Differential Geometry}, \emph{Graduate Studies in Mathematics} Volume: 107, American Mathematical Society, 2009. ISBN-13: 978-0-8218-4815-9
+
+\bibitem{Conl2008}
+Lawrence Conlon.  \textbf{Differentiable Manifolds} (Modern Birkhäuser Classics).  2nd Edition.  Birkhäuser; 2nd edition (October 10, 2008).  ISBN-13: 978-0817647667
+
+\bibitem{SageMath2017}
+The Sage Development Team.  Sage Reference Manual: Category Framework.  Release 7.6.  Mar. 25, 2017.  
+
+\bibitem{tensorflow2015}
+Martín Abadi, Ashish Agarwal, Paul Barham, Eugene Brevdo,Zhifeng Chen, Craig Citro, Greg S. Corrado, Andy Davis,Jeffrey Dean,Matthieu Devin, Sanjay Ghemawat, Ian Goodfellow,Andrew Harp, Geoffrey Irving, Michael Isard, Rafal Jozefowicz, Yangqing Jia,Lukasz Kaiser, Manjunath Kudlur, Josh Levenberg, Dan Mané, Mike Schuster,Rajat Monga, Sherry Moore, Derek Murray, Chris Olah, Jonathon Shlens,Benoit Steiner, Ilya Sutskever, Kunal Talwar, Paul Tucker,Vincent Vanhoucke, Vijay Vasudevan, Fernanda Viégas,Oriol Vinyals, Pete Warden, Martin Wattenberg, Martin Wicke,Yuan Yu, and Xiaoqiang Zheng.  
+\emph{TensorFlow: Large-scale machine learning on heterogeneous systems}, 2015. Software available from \href{http://tensorflow.org/}{tensorflow.org.}
+
+\bibitem{JZS2015}
+Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever.  "An Empirical Exploration of Recurrent Network Architectures."  \emph{Proceedings of the 32nd
+International  Conference on  Machine Learning}, Lille, France, 2015.  JMLR: W\&CP volume 37.  \url{http://www.jmlr.org/proceedings/papers/v37/jozefowicz15.pdf} 
+
 
   
 \end{thebibliography}
