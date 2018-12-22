@@ -1673,6 +1673,208 @@ a^{(l)} & (a_0^{(l)} = 1, a^{(l)} ) & z^{(l+1)} & g(z^{(l+1)}) = a^{(l+1)} \\
 \end{tikzpicture}
   \end{equation}
 
+\subsection{(Numerical) Implementation of ("column-wise" or component-wise) addition of bias $b$ for a DNN, comparing both component-wise scheme and using Matrix multiplication (BLAS, CUBLAS)}  
+
+Given a "column-major ordered" (i.e. you count entries down a column, first, before counting across, especially when applying to $\text{flatten}$ functor) matrix $A$, 
+\[
+\begin{aligned}
+	& A: \lbrace 0  ,1,\dots m-1 \rbrace \times \lbrace 0 ,1, \dots n-1 \rbrace \to \mathbb{R} \\
+	& A: (i,j) \mapsto A(i,j) \in \mathbb{R}
+\end{aligned}
+\]
+
+Let $mn =: L= $ total "size" of the matrix $A$, as a 1-dim. array.  
+
+Under the $\text{flatten}$ functor, with column-major ordering, $\text{flatten}_{\text{col}}$
+\[
+(i,j) \xrightarrow{ \text{flatten}_{\text{col} } } i+jm = : k 
+\]
+and for the inverse, 
+\[
+\begin{gathered}
+	k/m = j \\
+	k \mod{m} = i
+\end{gathered}
+\]
+The problem is this: due to specific hardware limitations on the device GPU, the number of threads that can be launched is maximally bounded.  
+
+Specifically, 
+\[
+\begin{aligned}
+	& i_x = 0,1,\dots M_x-1 ; \qquad & 1 \leq M_x \leq M_{x,\max} = 1024 \\ 
+	& j_x = 0,1,\dots N_x-1 ; \qquad \, & M_xN_x \leq L_{x,\max} \  \   (\text{device GPU, hardware specific})
+\end{aligned}
+\]
+
+Consider $t_x := i_x + j_x M_x + k_x N_x M_x \in \mathbb{Z}^+$.  
+
+Suppose $L\leq N_x M_x$.  Then $k_x=0$.  
+
+Suppose $m> M_{x,\max}$.  
+
+\[
+\frac{t_x}{m} = \frac{i_x}{m} + j_x \frac{M_x}{m} = j_x \frac{M_x}{m} \in \mathbb{Z}^+ 
+\]
+Then $j_x =j$ is 1-to-1, i.e. there's a clear 1-to-1 relationship between thread block the threads are in, and the column that the matrix entries $A(i,j)$ are in ($j$th column).  
+
+If $m\leq M_{x,\max}$, \\
+
+Try $M_x = 2^{ \log_2{ m } +1}$.  Then $\frac{M_x}{m} +1 = $ number of other columns accessed.   Try $M_x = 2^{\log_2{m}} < m$.  Then we obtain the previous case.  But it's unclear if $L \leq M_xN_x $ still.  
+
+Suppose $L> N_x M_x$.  
+
+\[
+\frac{L}{N_xM_x} +1 = K_x = \text{ total number of other entries a single thread has to deal with }
+\]
+
+If $m> M_{x,\max}$, 
+\[
+\frac{t_x}{m} = \frac{i_x}{m} + j_x \frac{M_x}{m} + k_x \frac{N_x M_x}{m} = (j_x + k_x N_x) \frac{M_x}{m} \in \mathbb{Z}^+
+\]
+
+So clearly $K_x$ different columns must be considered.  
+
+Thus, let's try this: begin with $m$, given ($m=$ number of examples in dataset).  
+
+If $m \geq M_{x,\max}$, let $M_x = M_{x,\max}$.  Otherwise, if $m < M_{x,\max}$  
+
+Consider $M_x = 2^{ \log_2{m}}$.  
+
+Consider then $N_xM_x = L_{x,\max}$.  (i.e. now compute $N_x := (L_{x,\max} + M_x-1)/ M_x$).  
+
+If $L_{x,\max} = (N_xM_{x,\max}) \geq L$, $k_x=0$, $K_x=1$.  \\
+Otherwise, \\
+If $L_{x,\max} = (N_xM_{x,\max}) < L$, $\frac{ L}{ (N_xM_x)_{\max}} +1 = K_x = $ total number of other entries a single thread has to deal with.  
+
+Then load $K_x$ values into \emph{shared memory}.  
+
+However, let's remind ourselves of the fact that $m \neq  M_x$.  Let's remind ourselves that 
+\[
+k = i+jm = 0,1,\dots mn-1, \qquad \, i = 0,1,\dots m-1; \, j = 0,1 , \dots n-1 , \qquad \, \frac{k}{m} = j, \qquad \, k\mod{m} = i 
+\]
+To account for all elements of $A=A(i,j)$, surely we can launch these threads and have \verb|for| loops if necessary for each thread to process even more entries (elements) of $A$: 
+\[
+t_x = i_x + j_x M_x + k_x N_xM_x = 0,1,\dots K_xN_xM_x - 1 \geq mn -1
+\]
+with 
+\[
+\begin{aligned}
+& i_x = 0,1,\dots M_x-1 \\
+& j_x = 0,1,\dots N_x-1 \\
+& k_x = 0,1,\dots K_x-1 
+\end{aligned}\]
+Enforcing $t_x < mn$, (as done in the \verb|for| loop with \verb|tid < SIZE|), then clearly $t_x$ and $k$ are 1-to-1:
+\[
+t_x \leftrightarrow k
+\]
+The subtlety with integer division is that we can't necessarily do distributivity with the division operator, i.e. we have to be careful with these statements:
+\[
+\begin{gathered}
+\frac{t_x}{m} = \frac{i_x}{m} + j_x \frac{M_x}{m} + k_x \frac{N_x M_x}{m} \\
+\text{if } m > M_x , \qquad \, \frac{t_x}{m} = (j_x + k_xN_x) \frac{M_x}{m}
+\end{gathered}
+\]
+
+Instead, consider, in the case of integer division, the numerator as a whole:
+\[
+\frac{i_x + j_xM_x}{m}
+\]
+Consider $i_x = 0,1,\dots M_x-1$.  
+
+If $m>M_x$, $j_x=0$, 
+\[
+\frac{i_x}{m} =0 \in \mathbb{Z}^+
+\]
+If $j_x = 1$, consider 
+\[
+\frac{i_x + M_x}{m}
+\]
+and the fact that $2M_x >m$ quite possibly.  
+
+Indeed, for the $j_x$th thread block, 
+\[
+i_x + j_x M_x = j_x M_x , j_x M_x + 1 , \dots (j_x+1) M_x - 1
+\]
+Suppose for $i_x' \in 0,1,\dots M_x-1$ ($i_x'$ fixed), 
+\[
+(i_x' + j_x M_x ) \mod{m} = 0 \text{ i.e. } i_x' + j_xM_x \text{ is a multiple of $m$, say } \frac{ i_x' + j_x M_x }{ m} = j 
+\]
+Clearly 
+\[
+\frac{i_x' - 1+j_xM_x }{m}\frac{i_x' - 2+j_xM_x }{m}, \dots \frac{j_xM_x}{m} = j-1
+\] because $M_x < m$.  
+
+Likewise
+\[
+\frac{ i_x' + 1 + j_x M_x}{m} , \frac{ i_x' + 2 + j_x M_x}{m}, \dots \frac{ (j_x+1) M_x - 1}{m} =j 
+\]
+Clearly, because $M_x < m$, and $(M_x-1) - i_x' < m$.  
+
+And so for, in general, $t_x = i_x + j_x M_x + k_x M_x N_x$, with $j_x,k_x$ fixed, \quad  $\begin{aligned} & j_x = 0 ,1,\dots N_x - 1\\ 
+& k_x = 0,1, \dots M_x N_x - 1 \end{aligned}$, so that within a thread block, for a given $k_x$, 
+\[
+t_x = j_x M_x + k_x M_xN_x , 1+ j_x M_x + k_x M_x N_x , \dots (j_x+1) M_x - 1 + k_x M_x N_x
+\]
+Clearly, if $M_x < m$, and since 
+\[
+(t_x)_{\max} - (t_x)_{\min} := (j_x+1)M_x - 1 + k_x M_x N_x - (j_xM_x + k_xM_x N_x) = M_x - 1 < m 
+\]
+There are only \textbf{2} distinct values, within a thread block, for given $j_x,k_x$ for $j$, i.e. for $\frac{t_x}{m} = j$  
+
+Take 
+\[
+\begin{aligned}
+& \frac{ (t_x)_{\min} }{ m} :=  \frac{ j_x M_x + k_x M_x N_x }{ m } \\ 
+& \frac{ (t_x)_{\max} }{ m} :=  \frac{ (j_x + 1) M_x - 1 + k_x M_x N_x }{ m }
+\end{aligned}
+\]
+
+\subsubsection{Theoretical speedup for adding bias $b$ using shared memory}
+For a thread block of size $M_x$, 
+\[
+\forall \, i_x = 0,1,\dots M_x -1, \text{ thread, $i_x$ accesses } b^j \Longrightarrow M_X \text{ accesses of } b^j
+\]
+For shared memory, only \\
+2 accesses to $b^j$.  Then each $i_x$ shares access to 2 shared values.  
+\[
+\frac{M_x}{ 2+M_x T_{\text{sh}} }
+\]with $1 > T_{\text{sh} } = $ time to access shared memory.  
+
+
+
+
+
+\subsubsection{Using matrix multiplication (BLAS, CUBLAS) scheme for "Column-wise" or component-wise addition of bias $b$} 
+
+Consider vector $b^{(l)} \in \mathbb{R}^{s_l}$, \  \  $s_l \in \mathbb{Z}^+$.  
+
+Consider not identity $1$, such as $\left( \begin{matrix}1 & & & \\ & 1 & & \\ & & \ddot & \\ & & & 1 \end{matrix}\right) \equiv \text{diag}(1,1\dots 1) \in \text{Mat}_{\mathbb{R}}(m,s_l)$ (padded with $0$ entries to make the matrix size dimensions, $m,s_l$, "correct" or constructed).  But a matrix of only $1$'s, $A_{\text{ones}} \equiv \verb|ones|$,  
+\[
+\begin{gathered}
+A^{(l)}_{\text{ones}} \in \text{Mat}_{\mathbb{R}}(m,s_l)  \\
+\forall \, i =0,1,\dots m-1, \quad \, \forall \, j =0,1,\dots s_l-1 ,  \  \  \\
+A^{(l)}_{\text{ones}}(i,j) =1
+\end{gathered}
+\]
+
+"Diagonalize" the vector $b^{(l)}$, s.t.
+\[
+(\text{diag}(b^{(l)}))_{kj} = \delta_{kj} (b^{(l)})^j
+\]
+Then 
+\[
+A_{\text{ones}}^{(l)} \text{diag}b^{(l)} = (A_{\text{ones}}^{(l)} \text{diag}b^{(l)} )_{ij} = ( A_{\text{ones}}^{(l)})_{ik} (\text{diag}b^{(l)} )_{kj} = ( A_{\text{ones}}^{(l)})_{ik} \delta_{kj} (b^{(l)})^j = ( A_{\text{ones}}^{(l)})_{ij}  (b^{(l)})^j = 1(b^{(l)})^j
+\]
+So 
+\[
+(A_{\text{ones}}^{(l)} \text{diag}b^{(l)} )_{ij} = (b^{(l)})^j
+\]
+is the desired result, because we can, for each $\forall \, i =0,1,\dots m-1$, (each "row"), add $b^{(l)}$ corresponding to the correct component (or i.e. column) $j$.  
+
+I presented this method for reference.  One should empirically verify if this matrix multiplication method, or the previous method of adding the $j$th component of $b^{(l)} = ( b^{(l)})^j$, directly, is faster.  I've found that the previous method is about 3x times faster than the matrix multiplication method (See and modify the \verb|linreg.cu| file, in \verb|github: cuBlackDream/examples/|).  
+
+
+
 \section{Backpropagation; Backpropagation algorithm}
 
 \subsection{Backpropagation, gradient descent, for linear regression}  
@@ -2412,7 +2614,7 @@ and
 \[
 \begin{gathered}
 \frac{\partial J}{ \partial (b^{(L)})^p } = \frac{1}{m} ( \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)}}{dz^{(L)}})^T 1_{m\times 1}   \\
-\frac{ \partial J }{ \partial (b^{(L-(l+1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
+\frac{ \partial J }{ \partial (b^{(L-(l-1) )} )^p } =  \frac{1}{m}  1_{1\times m } \left[ (  \frac{\widehat{y}_{(i)}^k - y_{(i)}^k }{ \widehat{y}_{(i)}^k (1 - \widehat{y}_{(i)}^k )} \odot \frac{d\psi^{(L)} }{ dz^{(L)} } )(\Theta^{(L)})^T \left( \bigodot^{l-2}_{ l'=1} \frac{d \psi^{(L-l')} }{ dz^{(L-l')}} (\Theta^{(L-l')})^T \right) \odot \frac{d\psi^{ (L-(l-1))} }{ dz^{(L-(l-1))}} \right]^{\  \  p } \\
 \forall \, l = 2,3, \dots L
 \end{gathered}\]
 Let us, only for notational convenience, when knowing that we are dealing with the case of logistic regression, using $s$, 
@@ -2815,7 +3017,7 @@ Bengio, et. al. \cite{GBC2016}
 \subsection{How to choose the number of hidden layers and nodes in a neural net}
 
 
-\part{Convolutional Neural Networks (CNN); CNN, higher-rank tensors}
+\part{Convolutional Neural Networks (CNN); CNN, higher-rank tensors, Winograd}
 
 
 
@@ -2854,7 +3056,14 @@ with size dimensions $L_1 \times L_2 \times \dots \times L_d, (L_1, L_2 \dots L_
 f: \lbrace 0 \dots L_1 - 1 \rbrace \times  \lbrace 0 \dots L_2 - 1 \rbrace \times \dots \times  \lbrace 0 \dots L_d - 1 \rbrace \to \mathbb{K}^C ; \qquad \, C\in \mathbb{Z}^+ , \, \mathbb{K} = \mathbb{R} \text{ or } \mathbb{Z} \\ 
 f(x_1,x_2 \dots x_d) = (f^{(1)}(x_1,x_2,\dots x_d), f^{(2)}(x_1,x_2,\dots x_d), \dots f^{(C)}(x_1,x_2,\dots x_d) )
 \end{gathered}
-\end{equation}
+\end{equation}   
+
+
+ Stutz (2014) \cite{Stut2014}
+
+
+
+
 \subsection{Filter (stencil) $c$ }
 For the filter (i.e. stencil) $c$, stipulate that $W$'s are odd, (the letter $W$ denote stencil width or filter width).  
 \[
@@ -2994,7 +3203,7 @@ We can also rewrite this as the following:
 \[
 \left( \otimes_{i=1}^d ( \mathbb{K}^C)^{L_i - 2h_i} \right)^m  
 \]
-The Convolution axon (or what others call convolution layer) is in a sense a higher-rank generalization of the DNN axon.  
+The Convolution axon (or what others call convolution layer) is in a sense a higher-rank generalization of the DNN axon.  Stutz (2014) \cite{Stut2014}.  
 cf. \href{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}{David Stutz's Seminar Report "Understanding Convolutional Neural Networks (2014)}, \url{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}
 
 
@@ -3075,6 +3284,14 @@ and also these important relations or checks between convolution axons and from 
 s_l = C_{l-1} \prod_{i=1}^d \left( \frac{ L_i^{(l-1)} - W_i^{(l-1)} + 1}{ P_i^{(l-1)} } \right) 
 \end{gathered}
 \end{equation}
+
+
+\section{Winograd}  
+
+
+
+
+
 
 \part{Vision; Computer Vision, 3-dim. Computer Vision, Projections, $\mathbb{R}P^n$}
 
@@ -5033,6 +5250,14 @@ Ian Goodfellow, Yoshua Bengio, and Aaron Courville.  \textbf{Deep Learning} (Ada
 \bibitem{BrCh2016}
 Jacob C. Bridgeman, Christopher T. Chubb.  \emph{Hand-waving and Interpretive Dance: An Introductory Course on Tensor Networks}.  
 \href{arXiv:1603.03039}{https://arxiv.org/abs/1603.03039} [quant-ph]
+
+
+\bibitem{Stut2014}
+David Stutz.  \emph{Understanding Convolutional Neural Networks}.  Seminar Report.  August 30, 2014.  Advisor: Lucas Beyer.  Fakultät für Mathematik, Informatik und Naturwissenschaften; Lehr- und Forschungsgebiet Informatik VIII; Computer Vision; Prof. Dr. Bastian Leibe.  \url{http://davidstutz.de/wordpress/wp-content/uploads/2014/07/seminar.pdf}.  
+
+\bibitem{LaGr2015}  
+Andrew Lavin, Scott Gray.  \emph{Fast Algorithms for Convolutional Neural Networks} \href{https://arxiv.org/abs/1509.09308}{arXiv:1509.09308 [cs.NE]}
+
 
 
 

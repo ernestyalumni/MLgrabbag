@@ -9,7 +9,9 @@
 
 \documentclass[10pt]{amsart}
 \pdfoutput=1
-\usepackage{mathtools,amssymb,lipsum,caption}
+%\usepackage{mathtools,amssymb,lipsum,caption}
+\usepackage{mathtools,amssymb,caption}
+
 
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -23,7 +25,7 @@
 \usepackage{breqn} % for dmath
 
 
-\usepackage{cancel} % for Feynman slash notation
+%\usepackage{cancel} % for Feynman slash notation
 
 \hypersetup{colorlinks=true,citecolor=[rgb]{0,0.4,0}}
 
@@ -437,6 +439,78 @@ The DNN model outlined in Subsection \ref{SubS:trainDNNmodel} correspond directl
 Certainly, there are other frameworks built on top of the frameworks provided by \verb|theano| and \verb|tensorflow|, namely \verb|keras| (\url{https://keras.io/}) and in some higher level classes in \verb|tensorflow| itself, namely \verb|layers|, that would implement such a DNN model.  I wanted to present here a general mathematical description of a DNN (or i.e. ANN) from the viewpoint of category theory (which is about as abstract and general as one can get in pure mathematics).  The point of category theory is that the relations between mathematical objects is important, not the specific nature of the objects themselves.  Thus, I introduced the notion of \emph{axons} as opposed to layers, and build DNNs out of axons.  
 
 Again, there are certainly other well-developed frameworks such as \verb|keras|, but I would submit, from a practical standpoint, that by understanding this mathematical prescription, one can deploy new types of NNs quickly.  For instance, Jozefowicz, Zaremba, and Sutskever (2015)\cite{JZS2015} evaluated different variations or "mutations" of Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) networks (these are examples of Recurrent Neural Networks (RNN); these can be implemented quickly by simply applying various compositions of weights and bias, ($\mathbf{\Theta,b}$) and so reusing this \verb|Thetab| class or \verb|Axon| class, instantiated several times, as I've shown in \href{https://github.com/ernestyalumni/MLgrabbag/blob/master/ML/GRUs_Right.py}{GRUs_Right.py}.  
+
+\section{Notes for presentations}  
+\begin{huge}
+
+\[
+\begin{aligned}
+	& \mathbf{X} \mapsto \mathbf{y}  \\
+	& \mathbf{X} \in \mathbb{R}^d  \  \, \text{ (row vector) } \\
+	&  \mathbf{y}, \mathbf{b} \in \mathbb{R}^k \  \, \text{ (row vectors) } \\
+	& \Theta \in \text{Mat}(d,k) \\
+	& \psi : \mathbb{R} \to \mathbb{R}, \  \text{ e.g. } \psi(x) = \frac{1}{ 1+\exp{(-x)}} \in (0,1)  
+\end{aligned}  
+\]
+
+\qquad \, \\ 
+
+
+\[
+\begin{gathered}
+\psi \odot (\mathbf{X} \Theta + \mathbf{b} ) = \widehat{ \mathbf{y}} \  (\odot \equiv \text{ element-wise multiplication})  
+\end{gathered}
+\]
+
+\qquad \, \\ 
+
+
+\[
+\begin{gathered}
+\psi^2((\psi^1\odot (\mathbf{X} \Theta^{(1)} + \mathbf{b}^{(1)})) \Theta^{(2)} + \mathbf{b}^{(2)}) \dots 
+\end{gathered}
+\]
+
+\qquad \, \\ 
+
+\[
+\begin{gathered}
+\begin{tikzpicture}[framed]
+\matrix (m) [matrix of math nodes, row sep=3.1em, column sep=10em, minimum width=2.5em]
+{
+	\mathbb{R}^d & \mathbb{R}^{s_1} & \mathbb{R}^{s_2} \dots  \\
+	\mathbf{X} & a^{(1)} &  a^{(2)} \dots  \\
+};
+\path[->]
+(m-1-1) edge node [above] {$\psi^1 \odot (\Theta^{(1)}, \mathbf{b}^{(1)} )$} (m-1-2)
+(m-1-2) edge node [above] {$\psi^2 \odot (\Theta^{(2)}, \mathbf{b}^{(2)} )$} (m-1-3)
+;
+\path[|->]
+(m-2-1) edge node [above] {$\psi^1 \odot (\Theta^{(1)}, \mathbf{b}^{(1)} )$} (m-2-2)
+(m-2-2) edge node [above] {$\psi^2 \odot (\Theta^{(2)}, \mathbf{b}^{(2)} )$} (m-2-3)
+;
+\end{tikzpicture} 
+\end{gathered}
+\]
+
+
+\[
+\begin{gathered}
+J = J(\mathbf{X}_{(i)},  \mathbf{y} _i) = \frac{1}{m} \sum_{i=1}^{m} |   \widehat{\mathbf{y}}_i - \mathbf{y}_i |^2 = \frac{1}{m} \sum_{i=1}^{m}  |   \widehat{\mathbf{y}}_i(\mathbf{X}_i) - \mathbf{y}_i |^2
+\end{gathered}
+\]
+
+where $m = $ number of examples in input data.  
+
+\[
+\begin{aligned}
+	& \Theta(t+1) := \Theta(t) - \alpha \frac{\partial }{ \partial \Theta(t)} J  \\
+	& b(t+1) := b(t) - \alpha \frac{\partial }{ \partial b(t)} J    \\
+	& \text{ where $\alpha \in \mathbb{R}$, $t\in \mathbb{Z}$.}  
+\end{aligned}
+\]
+
+\end{huge}
 
 \begin{thebibliography}{9}
 
