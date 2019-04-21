@@ -3,7 +3,7 @@
 """
 import pytest
 
-from quandl_wrapper.utilities.Configuration import Configuration
+from DataWrappers.utilities.Configuration import Configuration
 
 @pytest.fixture
 def config_ini_filepath():

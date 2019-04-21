@@ -29,13 +29,19 @@ class Configuration:
     return Configuration._filepath_to_config_ini
 
   # Class methods for wrapping configparser 
-  def get_configparser():
+  def get_configparser(self):
     """
     @fn get_configparser
     """
     config = configparser.ConfigParser()
-    config.read(str(filepath_to_config_ini()))
+    config.read(str(self.filepath_to_config_ini()))
     return config
+
+  def get_alphavantage_API_key(self):
+    """
+    @fn get_alphavantage_API_key
+    """
+    return get_configparser()["Authentication"]["alphavantage_API_key"]
 
   def get_quandl_API_key(self):
     """
