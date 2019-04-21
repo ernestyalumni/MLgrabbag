@@ -141,6 +141,24 @@ def url_response_for_time_series_intraday(symbol, \
                                           interval='1min',
                                           outputsize='compact',
                                           datatypes='json'):
+    """
+    @fn url_response_for_time_series_intraday
+    
+    @param symbol The symbol for the equity we want to get data about.
+    @param interval Time interval between 2 consecutive values.
+    Supported values are
+        '1min'
+        '5min'
+        '15min'
+        '30min'
+        '60min'
+        (default is '1min')
+    @param output_size The size of the call. The desired size for the output.
+    Supported values are 'compact' and 'full'.
+    'compact' returns the last 100 points in the data series, and
+    'full' returns the full-length intraday time series, commonly above 1MB.
+    Default is 'full'
+    """
     return url_for_time_series_intraday(symbol, \
                                         interval, \
                                         outputsize, \
