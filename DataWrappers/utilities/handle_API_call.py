@@ -12,6 +12,16 @@ def handle_API_call(url):
 def response_from_API_call(url):
     return urllib.request.urlopen(url)
 
+def string_response_from_API_call(response):
+    """
+    @fn string_response_from_API_call
+    @details Python 3's documentation on urllib states explicitly that the
+    response from a GET call to a URL address comes back in the form/type of
+    bytes (i.e. `utf-8`).
+    """
+    return response.read().decode('utf-8')
+
+
 #def handle_function_arguments(function):
 """
 @fn handle_function_arguments

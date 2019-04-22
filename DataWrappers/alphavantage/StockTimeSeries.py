@@ -23,7 +23,8 @@ can return references to function objects.
 """
 from DataWrappers.utilities.Configuration import Configuration
 from DataWrappers.utilities.handle_API_call import (handle_API_call,
-  response_from_API_call)
+  response_from_API_call,
+  string_response_from_API_call)
 
 from collections import namedtuple
 from functools import wraps
@@ -163,7 +164,45 @@ def url_response_for_time_series_intraday(symbol, \
                                         interval, \
                                         outputsize, \
                                         datatypes)
+
+def _get_string_from_url(function):
+    
+    @wraps(function)
+    def function_wrapper(*args, **kwargs):
         
+        response = function(*args, **kwargs)
+        
+        return string_response_from_API_call(response)
+
+    return function_wrapper
+
+@_get_string_from_url
+def string_response_for_time_series_intraday(symbol, \
+                                             interval='1min',
+                                             outputsize='compact',
+                                             datatypes='json'):
+    """
+    @fn string_response_for_time_series_intraday
+    
+    @param symbol The symbol for the equity we want to get data about.
+    @param interval Time interval between 2 consecutive values.
+    Supported values are
+        '1min'
+        '5min'
+        '15min'
+        '30min'
+        '60min'
+        (default is '1min')
+    @param output_size The size of the call. The desired size for the output.
+    Supported values are 'compact' and 'full'.
+    'compact' returns the last 100 points in the data series, and
+    'full' returns the full-length intraday time series, commonly above 1MB.
+    Default is 'full'
+    """
+    return url_response_for_time_series_intraday(symbol, \
+                                                 interval, \
+                                                 outputsize, \
+                                                 datatypes)
 
 #@AlphaVantage._output_format
 #@AlphaVantage._call_API_on_function
