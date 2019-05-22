@@ -191,7 +191,90 @@ The data input pipeline I propose is the following:
 \end{tikzpicture}
 \end{equation}
 
+\section{Parsing Microsoft Excel files}
 
+\subsection{Parsing (i.e. extracting) table headers}
+
+Let $\begin{aligned} 
+& \quad \\
+& i \in \lbrace 1, 2, \dots \rbrace \\
+& j \in \lbrace 1, 2, \dots \rbrace \end{aligned}$.
+
+Consider a single cell represented by $(i, j)$. 
+
+We can represent a merged cell by a set $\lbrace (i_{\text{min}}, j_{\text{min}}), \dots (i_{\text{max}}, j_{\text{min}}), \dots (i_{\text{min}}, j_{\text{max}}), \dots (i_{\text{max}}, j_{\text{max}}) \rbrace$. 
+
+Clearly we require
+\begin{equation}
+\boxed{
+	\begin{aligned} & i_{\text{min}} \leq i_{\text{max}} \\ 
+& j_{\text{min}} \leq j_{\text{max}} 
+\end{aligned} }
+\end{equation}
+
+Also, notice that 
+\[
+\begin{aligned}
+& i_{\text{max}} - i_{\text{min}} + 1 = \text{ number of rows } \\ 
+& j_{\text{max}} - j_{\text{min}} + 1 = \text{ number of columns }
+\end{aligned}
+\]
+
+Let $C_H \equiv \text{Cell}_{\text{Merged}} \equiv \lbrace (i_{\text{min}}, j_{\text{min}}), \dots (i_{\text{max}}, j_{\text{min}}), \dots (i_{\text{min}}, j_{\text{max}}), \dots (i_{\text{max}}, j_{\text{max}}) \rbrace$.
+
+Consider $H \equiv $ header $ = \lbrace C^1_M, C^2_M, \dots C_m^H \rbrace \equiv \lbrace C^{i^1_{\text{min}}, j^1_{\text{min}}}_M, C^{i^2_{\text{min}}, j^2_{\text{min}}}_M, \dots, C^{i^H_{\text{min}}, j^H_{\text{min}}}_M \rbrace$. 
+
+We have the \emph{constraint} that $H$ is finite, i.e. $H < \infty$. 
+
+Assume $\forall \, C_M^a, C_M^b$, if $i_{\text{min}}^a < i^b_{\text{min}}$ (i.e. cell $C_M^a$ is "above", i.e. in a row "above" $C_M^b$), then either
+\[
+j^b_{\text{max}} < j_{\text{min}}^a \text{ or } j_{\text{min}}^b > j_{\text{max}}^a
+\] 
+(i.e. $C_M^b$ is not directly below $C^a_M$ at all), or 
+\[
+(j^a_{\text{min}} \leq j^b_{\text{min}} \text{ and } j^b_{\text{max}} < j^a_{\text{max}}) \text{ or } (j^a_{\text{min}} < j_{\text{min}}^b \text{ and } j^b_{\text{max}} \leq j_{\text{max}}^a) \text{ or } (j^a_{\text{min}} < j^b_{\text{min}} \text{ and } j^b_{\text{max}} < j^a_{\text{max}})
+\]
+i.e. $j_{\text{max}}^b - j^b_{\text{min}} + 1 \equiv J^b  < j^a_{\text{max}} - j_{\text{min}}^a + 1 \equiv J^a$, i.e. the column span of the cell above is longer and covers the entirety of the cell below (otherwise, why have another header for same data series?).
+
+Notice that for a header, $\exists \, $ \\
+$I_{\text{min}}$ s.t. $\forall \, i^a_{\text{min}}, \, i^a_{\text{min}} \geq I_{\text{min}}$ \\
+$I_{\text{max}}$ s.t. $\forall \, i^a_{\text{max}}, \, i^a_{\text{max}} \leq I_{\text{max}}$ \\
+$J_{\text{min}}$ s.t. $\forall \, j^a_{\text{min}}, \, j^a_{\text{min}} \geq J_{\text{min}}$ \\
+$J_{\text{max}}$ s.t. $\forall \, j^a_{\text{max}}, \, j^a_{\text{max}} \leq J_{\text{max}}$ \\
+
+Claim: 
+\[
+H = \coprod^{I_{\text{max}}}_{i^a_{\text{min}} = I_{\text{min}}} \lbrace C^{i^a_{\text{min}}, j_{\text{min}}^1 }, \dots , C^{i^a_{\text{min}}, j_{\text{min}}^{R^a} } \rbrace_{i^a_{\text{min}}}
+\]
+i.e. $H$ can be partitioned into the disjoint union of sets of merged cells all with the same $i^a_{\text{min}}$. Note that a set of merged cells for $i^a_{\text{min}}$ could be empty, except for $i^a_{\text{min}} = I_{\text{min}}$.
+
+First, once we obtain $I_{\text{min}}, I_{\text{max}}, J_{\text{min}}, J_{\text{max}}$ for a "header" $H$, we want to check for any "single" cells within
+\[
+(I_{\text{min}}, I_{\text{max}}) \times (J_{\text{min}}, J_{\text{max}})
+\] 
+
+Then, $\forall \, (i,j) \in (I_{\text{min}}, I_{\text{max}}) \times (J_{\text{min}}, J_{\text{max}})$, \\
+check if $(i, j) \in C^a_M$ for some $C^a_M \in H$. If not, examine $(i, j)$ and add it to $H$.
+
+Consider $i^a_{\text{min}} = I_{\text{min}}$. Consider $\lbrace C^{I_{\text{min}}, j^1_{\text{min}}}, \dots C^{I_{\text{min}}, j^R_{\text{min}}} \rbrace_{I_{\text{min}}} \equiv \mathbf{R}_{I_{\text{min}}} \equiv \text{ row at } I_{\text{min}}$.
+	
+Consider $i^a_{\text{min}} = I_{\text{min}} + 1$, or more generally $i^a_{\text{min}} > I_{\text{min}}$.
+
+Consider $ \lbrace C^{I_{\text{min}} + 1, j^1_{\text{min}}}, \dots C^{I_{\text{min}} + 1, j^{R_{I_{\text{min}} + 1}}_{\text{min}}} \rbrace_{I_{\text{min}} + 1} \equiv \mathbf{R}_{I_{\text{min}} + 1} \equiv \text{ row at } I_{\text{min}} + 1$
+
+If $\mathbf{R}_{I_{\text{min}} + 1} = \emptyset$, done.
+
+Otherwise, $\forall \, C^{I_{\text{min}} + 1, j^b_{\text{min}}} \in \mathbb{R}_{I_{\text{min}} + 1}$, $\exists \, ! \, C^{I_{\text{min}}, j^a_{\text{min}}} \in \mathbb{R}_{I_{\text{min}}}$ s.t.
+\[
+j^a_{\text{min}} \leq j_{\text{min}}^b \text{and } j^a_{\text{max}} \geq j^b_{\text{max}} \text{ and if } j^a_{\text{min}} = j^b_{\text{min}}, \text{ then } j^a_{\text{max}} > j^b_{\text{max}}, \text{ and if } j^a_{\text{max}} = j^b_{\text{max}}, \text{ then } j^a_{\text{min}} < j^b_{\text{min}}
+\]
+
+In general, for $i_{\text{min}} = I_{\text{min}} + 1 , \dots I_{\text{max}}, \, \exists \, ! \, C^{i_{\text{min}}', j^a_{\text{min}} } \in H$ s.t. $i_{\text{min}}' < i_{\text{min}}$, and 
+\[
+(j_{\text{min}}, j_{\text{max}}) \subset (j^a_{\text{min}}, j^a_{\text{max}})
+\]
+
+So, one must try to iteratively check all the rows "above" a cell to find a cell, whose column span contains its column span.
 
 \part{Introduction}
 
