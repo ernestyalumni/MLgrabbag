@@ -1,0 +1,39 @@
+# To run, do
+# docker-compose up
+# This docker-compose file was made to try to run this command
+# docker run -v /home/propdev/Prop/cuBlackDream:/cuBlackDream --gpus all -it -p 8888:8888 --rm --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 nvcr.io/nvidia/pytorch:23.08-py3
+
+version: '3.8'
+
+services:
+  pytorch:
+
+    # To directly use the image without a Dockerfile: (we run the following)
+    image: nvcr.io/nvidia/pytorch:23.08-py3
+    # Maps container's port 8888 to host's post 8888
+    ports:
+      - "8888:8888"
+    # mounts local directory to directory in container.
+    volumes:
+      # Change this manually to your local setup.
+      - /home/ernest/Eng/cuBlackDream:/cuBlackDream
+    environment:
+      - NVIDIA_DISABLE_REQUIRE=1
+    # deploy is a directive used to specify GPU resources for service; this is
+    # equivalent to --gpus all
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            # Indicates container should have access to all available GPUs;
+            # -1 acts as a wildcard, meaning "all available."
+            count: -1
+            capabilities: [gpu]
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    command: /bin/bash
+    stdin_open: true
+    tty: true

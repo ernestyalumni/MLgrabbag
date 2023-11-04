@@ -14,6 +14,24 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
     * Notably, [Week 1 Linear Algebra Review of Coursera's Machine Learning Introduction, taught by Ng](https://www.coursera.org/learn/machine-learning/supplement/xRMqw/lecture-slides) is translated into `theano` on the *GPU*
     * [`./CUDNN/`](https://github.com/ernestyalumni/MLgrabbag/tree/master/CUDNN)  Example scripts, examples of using CUDNN, directly  
 
+## Creating and starting a virtual environment for Python 3
+
+Create a directory for a virtual environment:
+
+```
+/cuBlackDream$ python3 -m venv ./venv/
+```
+
+Activate it:
+```
+/cuBlackDream$ source ./venv/bin/activate
+```
+You should see the prompt have a prefix `(venv)`.
+
+Deactivate it:
+```
+deactivate
+```
 
 ## Notes on `theano`
 
@@ -27,11 +45,9 @@ MLgrabbag - Machine Learning grab bag: includes (pedagogical) examples and imple
 - `simple_logreg.py` - from Theano's documentation and its tutorial, to run this on the GPU, I used the following:
 
 
-
 ```
 THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python simple_logreg.py
 ```
-
 
 
 # Installation of NVIDIA CUDA on Fedora 23 Workstation (Linux)
